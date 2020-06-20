@@ -1,0 +1,9 @@
+	IMPORT	Glob
+
+oR	*	0
+rA	*	1024
+rP	*	rA+1
+rS	*	rP+1
+rX	*	rS+1
+rY	*	rX+1
+	END

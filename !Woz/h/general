@@ -1,0 +1,49 @@
+/* Quelques definitions qui devraient se trouver dans un fichier type.h */
+typedef unsigned char u_char;
+typedef unsigned int  u_int;
+
+#define ARM
+/* Quelques definitions et macros utiles */
+#define BITN 128
+#define BITV 64
+#define BITC 1
+#define BITZ 2
+#define BITI 4
+#define BITD 8
+#define BITB 16
+
+/* Taille physique du code Apple: 163840 pour le moment (04/09/90) */
+#define SIZE_CODE 163840 /* octets */
+#define NEXTPC Reg_PC++;Reg_PC&=0xffff
+#define Lire_Code(Ax) AppleCode->bytes[offread[(Ax)>>8]+Ax]
+#define LRPC Lire_Code(Reg_PC)
+
+typedef struct
+	{
+	u_char bytes[SIZE_CODE];
+	} EightBitCode;
+
+/* Concerne le modele memoire adopte */
+#define     OFFBANK 0x14000
+
+#ifdef ARM
+typedef struct
+	{
+	u_int offr[256];
+	u_char rA, rP, rS, rX, rY;
+	} TypGlb;
+#define offread Glob.offr
+#define Reg_A Glob.rA
+#define Reg_P Glob.rP
+#define Reg_S Glob.rS
+#define Reg_X Glob.rX
+#define Reg_Y Glob.rY
+#endif
+
+/* Longueur des denominations de path */
+#define FNAMELENGTH 32
+
+/* Caracteres video en local */
+#define NOMBRE_CHARS_LOCAL 10
+#define US 0
+#define LOCAL 1

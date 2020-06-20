@@ -1,0 +1,383 @@
+	TR ON
+	XC	;Enable 65C02 opcodes
+* FileCopy between Apple //e' ProDOS & Archimedes F.S.
+* (c) 1991 - Benoit Gilon
+
+* ProDOS version 0.2 (16/10/91)
+
+* Thanks to: Arlo Guthrie,
+*	     John Renbourn and Stephan Grossman,
+*	     Mike Olfield,
+*	     World Party,
+*	     Alan Parsons,
+*	     Wolfang Amadeus Mozart
+* for the nice music.
+
+* Archimedes equates:
+
+LENTHARC =	31	Max length for archimedes filename
+ARCEOF =	2	End of file for ADFS read
+RISCOPEN EQU	$C000
+RISCREAD EQU	$C001
+RISCWRITE EQU	$C002
+RISCCLOSE EQU	$C003
+
+* ProDOS and MLI equates:
+
+APPEOF	=	$4C End of file for ProDOS read
+CREATE	=	$C0
+ONLINE	=	$C5
+SETPREFX =	$C6
+OPEN	=	$C8
+READ	=	$CA
+WRITE	=	$CB
+CLOSE	=	$CC
+
+MLI	EQU	$BF00	MLI entry point
+DEVNUM	EQU	$BF30	Most recent accessed device
+PFIXPTR EQU	$BF9A	If = 0, no prefix active
+
+* Monitor equates:
+
+CH	EQU	$24
+BASL	EQU	$28
+GOTOCX	EQU	$FBB4
+INPBUF	EQU	$0200	Input line buffer
+HOME	EQU	$FC58
+COUT	EQU	$FDED
+PRBYTE	EQU	$FDDA
+RDKEY	EQU	$FD0C
+GETLN1	EQU	$FD6F
+CROUT	EQU	$FD8E
+
+* Harware equates
+RD80VID EQU	$C01F
+OAPKEY	EQU	$C061
+
+	ORG $2000
+
+	JMP BEGIN
+MESSAG
+MESS00	ASC	"       Apple/Archimedes copy program",8D
+	ASC	"       (c) 1991 Benoit GILON",8D
+	HEX	8D
+	ASC	"!Apple -> Archimedes -0-",8D
+	ASC	"!Archimedes -> Apple -1-",8D
+	HEX	8D
+	ASC	" : ",00
+MESS01	HEX	8D8D
+	ASC	"!Name of Archimedes file :",8D00
+MESS02	ASC	"!Name of Apple file : ",00
+MESS03	HEX	8D
+	ASC	"!Ooops : error ",00
+MESS04	HEX	8D
+	ASC	"Well done!",00
+MESS05	ASC	" another ? (Y/N) ",00
+MESS06	ASC	"N"
+	HEX	8D8D
+	ASC	"!Au revoir/Bye/Adios/Auf wiedersehen",8D
+	HEX	8D00
+]M0	EQU	MESSAG/256
+]M1	EQU	MESS06/256
+	ERR	]M1-]M0
+	DS	\
+* Macro to easier Arc filename typing:
+MESSAG2
+MESS10	ASC	"<Obey$Dir>.",00
+MESS11	ASC	"<Woz$Dir>.",00
+
+* -> Ensure prefix active:
+BEGIN	LDA	PFIXPTR
+	STA	REMPFIX Remember
+	BNE	DEBUT
+	LDA	DEVNUM	Get volume name
+	STA	UNIT	 of most recent
+	JSR	MLI	 accessed device
+	DFB	ONLINE
+	DA	PONLINE
+	BCS	DEBUT
+	LDA	PATHNAME+1 Set new prefix
+	AND	#$0F	Isolate length nibble
+	INC
+	STA	PATHNAME
+	LDA	#"/"
+	STA	PATHNAME+1
+	JSR	MLI
+	DFB	SETPREFX
+	DA	PSETPFX
+
+DEBUT	JSR	HOME
+	LDX	#0	Welcome banner
+	JSR	PRINT	Output it
+]LOOP	JSR	RDKEY
+	EOR	#"0"
+	CMP	#1+1
+	BCS	]LOOP
+	STA	SENSCOP
+	EOR	#"0"
+	JSR	COUT
+* -> Enter Archimedes filename:
+	LDX	#1
+	JSR	PRINT
+	JSR	MYGETLN1
+	CPX	#LENTHARC+1
+	BCC	:0
+	LDX	#LENTHARC
+:0	LDA	#0
+	BEQ	:1	Always
+]LOOP	LDA	INPBUF,X
+	AND	#$7F
+:1	STA	ANAME,X
+	DEX
+	BPL	]LOOP
+* -> Enter Apple ProDOS filename:
+	LDX	#2
+	JSR	PRINT
+	JSR	GETLN1
+	CPX	#64+1	No more than
+	BCC	:2
+	LDX	#64
+:2	STX	PATHNAME
+	LDX	#0
+	BEQ	:3	Always
+]LOOP	LDA	INPBUF,X
+	STA	PATHNAME+1,X
+	INX
+:3	CPX	PATHNAME
+	BCC	]LOOP
+* -> Do the copy:
+	LDA	SENSCOP
+	BNE	:4	Arc to Apple
+	JSR	APTOARC
+	BRA	:5
+:4	JSR	ARCTOAP
+:5	BCC	:6	Carry set on error
+	LDX	#3
+	JSR	PRINT
+	LDA	ERROR
+	JSR	PRBYTE
+	BRA	:7
+:6	LDX	#4
+	JSR	PRINT	Congratulations
+:7	LDX	#5
+	JSR	PRINT	Give another try
+]LOOP	JSR	RDKEY
+	CMP	#"z"+1
+	BCS	:8
+	CMP	#"a"
+	BCC	:8
+	AND	#$DF
+:8	CMP	#"N"
+	BEQ	:9
+	CMP	#"Y"
+	BNE	]LOOP
+	JMP	DEBUT
+* -> Restore initial prefix setting on exit
+:9	LDA	REMPFIX
+	BNE	:99
+	STA	PATHNAME A=0
+	JSR	MLI
+	DFB	SETPREFX
+	DA	PSETPFX
+:99	LDX	#6
+	JMP	PRINT
+
+* Print a message to screen
+PRINT	LDA	OFFSET,X
+	LDX	#0
+	STA	:0+1
+:0	LDA	MESSAG,X
+	BEQ	:1
+	JSR	COUT
+	INX
+	BNE	:0	Always
+:1	RTS
+
+* Archimedes to Apple file copy routine
+ARCTOAP CLC	    ;For read only
+	LDX	#ANAME
+	LDY	#>ANAME
+	JSR	RISCOPEN Open ADFS file
+	BCS	:0
+	JSR	MLI
+	DFB	CREATE
+	DA	PCREATE
+	JSR	MLI	Open ProDOS file
+	DFB	OPEN
+	DA	POPEN
+	BCC	:3
+	JSR	RISCCLOSE
+	SEC
+:0	STA	ERROR
+	RTS
+:3	LDA	OPREFNM Update ref. num.
+	STA	WRREFNM ; into parm. tables
+	STA	CLREFNM
+]LOOP	LDX	#MYBUFFER
+	LDY	#>MYBUFFER
+	LDA	#0	;Means 256 bytes wanted
+	JSR	RISCREAD
+	BCC	:1
+	STA	ERROR
+	EOR	#ARCEOF ADFS file EOF?
+	BNE	:2
+	CLC
+:2	PHP
+	JSR	MLI	Close ProDOS file
+	DFB	CLOSE
+	DA	PCLOSE
+	JSR	RISCCLOSE
+	PLP
+	RTS
+:1	STA	WRBYTES
+	LDX	#0
+	TAY
+	BNE	:A
+	INX
+:A	STX	WRBYTES+1
+	JSR	MLI
+	DFB	WRITE
+	DA	PWRITE
+	BCC	]LOOP
+	STA	ERROR
+	BCS	:2	Always
+
+* Apple to Archimedes copy routine
+APTOARC JSR	MLI	Open ProDOS file
+	DFB	OPEN
+	DA	POPEN
+	BCC	:0
+	STA	ERROR
+	RTS
+:0	LDA	OPREFNM
+	STA	RDREFNM
+	STA	CLREFNM
+	SEC		;Open for writing
+	LDX	#ANAME	ADFS file
+	LDY	#>ANAME
+	JSR	RISCOPEN
+	BCC	:1
+	STA	ERROR
+	PHP
+]GOERR	JSR	MLI
+	DFB	CLOSE
+	DA	PCLOSE
+	PLP
+	RTS
+:1	JSR	MLI
+	DFB	READ
+	DA	PREAD
+	BCC :3
+	EOR	#APPEOF ProDOS file EOF?
+	BNE	:2
+	CLC
+:2	STA	ERROR
+	PHP
+	JSR	RISCCLOSE
+	JMP	]GOERR
+:3	LDX	#MYBUFFER
+	LDY	#>MYBUFFER
+	LDA	RDBYTES
+	JSR	RISCWRITE
+	BCC	:1
+	BCS	:2
+
+* Subroutine to enter an Arc FileSwitch pathname:
+MYGETLN1 LDX	#0
+BCKSPC	TXA
+	BEQ	NXTCHAR
+	DEX
+NXTCHAR JSR	RDKEY
+	CPX	#0	Only valid at beginning
+	BNE	:2	of line
+	BIT	OAPKEY	Test Open Apple key
+	BPL	:2	not pressed
+	CMP	#"W"
+	BEQ	:1
+	CMP	#"O"
+	BNE	:2
+	LDY	#0
+	HEX	2C	Skip next 2 bytes
+:1	LDY	#1
+	LDA	OFFSET2,Y
+	STA	:0+1
+	LDY	CH	Restore Y
+:0	LDA	MESSAG2,X
+	BEQ	NXTCHAR
+	STA	INPBUF,X
+	JSR	COUT
+	INX
+	BRA	:0
+:2	CMP	#$95	Use Screen char
+	BNE	ADDINP
+	LDA	(BASL),Y Do 40 column pick
+	BIT	RD80VID 80 columns?
+	BMI	PICKFIX
+ADDINP	STA	INPBUF,X
+	CMP	#$8D
+	BNE	NOTCR
+	JMP	$FD8B
+PICKFIX LDY	#$0F	code=  fixpick
+	JSR	GOTOCX	Do 80 columns pick
+	LDY	CH	Restore Y
+	STA	INPBUF,X
+NOTCR	JSR	COUT
+	LDA	INPBUF,X Check for EDIT keys
+	CMP	#$88
+	BEQ	BCKSPC
+	INX
+	BNE	NXTCHAR Always branch
+
+SENSCOP DS	1
+ERROR	DS	1
+REMPFIX DS	1
+ANAME	DS	LENTHARC+1 ADFS pathname buffer
+PATHNAME DS	64+1
+
+* MLI call parameters
+PCREATE DFB	7	CREATE parm.
+	DA	PATHNAME
+	HEX	E3	Full access
+	DFB	0	Typeless file
+	DW	0	Null aux byte
+	DFB	1	Storage type: standard
+	DW	0	Unknown create date
+	DW	0	Unknown create time
+
+POPEN	DFB	3	OPEN parm.
+	DA	PATHNAME
+	DA	IOBUFFER
+OPREFNM DS	1
+
+PREAD	DFB	4	READ parm.
+RDREFNM DS	1
+	DA	MYBUFFER
+	DW	256	256 bytes per read call
+RDBYTES DS	2	Number of bytes actually read
+
+PWRITE	DFB	4	WRITE parm.
+WRREFNM DS	1
+	DA	MYBUFFER
+WRBYTES DW	0	Number of bytes to be written
+	DS	2	Number of bytes actually written
+
+PCLOSE	DFB	1	CLOSE parm.
+CLREFNM DS	1
+
+PSETPFX DFB	1	SET_PREFIX parm.
+	DA	PATHNAME
+
+PONLINE DFB	2	ON_LINE parm.
+UNIT	DS	1
+	DA	PATHNAME+1
+
+OFFSET DFB	MESS00,MESS01,MESS02,MESS03
+	DFB	MESS04,MESS05,MESS06
+
+OFFSET2 DFB	MESS10,MESS11
+
+	DUM	*
+	DS	\
+MYBUFFER DS	256	Data I/O buffer (Application use)
+IOBUFFER DS	1024	Needed by ProDOS
+	DEND

@@ -1,0 +1,113 @@
+#include  <stdio.h>
+#include  <stdlib.h>
+#include  <string.h>
+
+#include  "RISCOSLib:sprite.h"
+
+#include "general.h"
+#define NO_ERROR 0
+#define ERROR_ALLOC 1
+#define ERROR_INCOMPLETE 2
+#define INVALID_SPRITE_NAME 3
+#define TOO_MUCH_SPRITE_LOCAL 4
+#define LOCAL_SPR_NOT_FOUND 5
+
+extern sprite_area *home_area;
+
+sprite_ptr spr_addr[129], spr_local[2][NOMBRE_CHARS_LOCAL];
+
+
+
+/* Definition des caracteres standards/locaux - par paire */
+extern char localcharcode[2][NOMBRE_CHARS_LOCAL][9];
+extern u_char nbr_local;
+
+int d_return(int err)
+{
+free(home_area);
+home_area= NULL;
+return(err);
+}
+
+char sprite_init(void)
+{
+extern char local_def[NOMBRE_CHARS_LOCAL];
+extern os_regset mregs;
+extern sprite_pixtrans mpixtrans[2];
+extern sprite_factors mfactors;
+sprite_header *curr_sprite;
+u_char index;
+u_char nbr_spr_local = 0;
+#define NBR_SPRITES_LOCAL NOMBRE_CHARS_LOCAL+6
+char local_c[NBR_SPRITES_LOCAL];
+sprite_ptr spr_local_t[NBR_SPRITES_LOCAL];
+
+memset(spr_addr, 0, sizeof(spr_addr));
+curr_sprite= (sprite_header *) (home_area->sproff + (int) home_area);
+for(index=1; index<= home_area->number; index++)
+	{
+	if(curr_sprite->name[0] != 'l')
+		{
+		int offset;
+		if(curr_sprite->name[1] == '¤') curr_sprite->name[1]= 0x7f;
+		switch(curr_sprite->name[0])
+			{
+			case 's': /* Symboles et chiffres */
+				offset= ' ' - '`';
+				break;
+			case 'a': /* Majuscules */
+				offset= '@' - '`';
+				break;
+			case 'i': /* Minuscules */
+				offset= 0;
+				break;
+			case 'o': /* Caracteres MouseText */
+				offset= - '`';
+				break;
+			case 'k': /* Caractere bloc lores */
+				if(curr_sprite->name[1] == '`')
+					{
+					offset= 128 - '`';
+					break;
+					}
+			default:
+				return(d_return(INVALID_SPRITE_NAME));
+			}
+		spr_addr[curr_sprite->name[1]+offset]= curr_sprite;
+		}
+	else	{
+		if(nbr_spr_local>= NBR_SPRITES_LOCAL)
+			return(d_return(TOO_MUCH_SPRITE_LOCAL));
+		local_c[nbr_spr_local]= curr_sprite->name[1] | 0x80;
+		spr_local_t[nbr_spr_local++]= curr_sprite;
+		}
+	curr_sprite= (sprite_header *) ((int) curr_sprite + curr_sprite->next);
+	}
+
+/* Controle que les 129 caracteres de base sont bien definis */
+for(index=0; index<129; index++)
+	if(!spr_addr[index]) return(d_return(ERROR_INCOMPLETE));
+
+for(index=0; index<nbr_local; index++)
+	{
+	char *p1;
+	if((p1= memchr(local_c,(int) local_def[index],
+		nbr_spr_local)) == NULL) return(d_return(LOCAL_SPR_NOT_FOUND));
+	spr_local[LOCAL][index]= spr_local_t[p1-local_c];
+	spr_local[US][index]= spr_addr[localcharcode[US][index][0]];
+	}
+
+mregs.r[1]= (int) home_area;
+mregs.r[6]= (int) &mfactors;
+mregs.r[7]= (int) mpixtrans;
+return(NO_ERROR);
+}
+
+void sprite_rloc(void)
+{
+extern u_char mode_local;
+u_char index;
+
+for(index=0; index<nbr_local; index++)
+	spr_addr[localcharcode[0][index][0]]= spr_local[mode_local][index];
+}

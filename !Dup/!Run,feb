@@ -1,0 +1,4 @@
+QUIT
+|!Run for !DUP
+IconSprites <Obey$Dir>.!Sprites
+RUN <Obey$Dir>.!RunImage

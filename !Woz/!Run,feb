@@ -1,0 +1,14 @@
+| Version 1.4 du 16 octobre 1991
+Wimpslot -min 288K -max 512K
+RMEnsure SharedClibrary *RMLoad System:Modules.CLib
+|set IK$flag 1
+|RMEnsure InternationalKeyboard 0 set IK$flag 0
+|if "<IK$flag>"="1" then RMKill InternationalKeyboard
+Set MyKey$1 <Key$1>
+unset Key$1
+Set Woz$Dir <Obey$Dir>
+Run <Obey$Dir>.!RunImage
+|if "<IK$flag>"="1" then RMReInit InternationalKeyboard
+|unset IK$flag
+set Key$1 <MyKey$1>
+unset MyKey$1

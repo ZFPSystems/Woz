@@ -1,0 +1,25 @@
+A bit of history:
+
+Version 0.0: This version was written in BBC BASIC and then
+             converted to ANSI C (release 3). It provided:
+ - A 6502 CPU,
+ - An enhanced //e ROM,
+ - Keyboard softswitches access,
+ - 40 columns text page 1 (primary charset),
+ - Bell subroutine emulation.
+Version 0.1:
+ - A 65C02 NCR/GTE CPU,
+ - Language card, 80 column display, 128 Ko bytes
+    memory model.
+Version 0.2: Floppy drive under DOS 3.3 system,
+Version 0.3: Mousetext characters, Lores/mixed/Page2 modes.
+Version 0.4: ProDOS 8 compatibility.
+Version 0.5: Localized video, Integer BASIC bug fixed.
+Version 0.6: (Recompiled with Acorn DeskTop C)
+ - Dual drive support, ProDOS clock support,
+ - File copy between FileSwitch and ProDOS,
+ - Unidisk 3.5 ProDOS boot/read/write on 800Ko ADFS floppy disks,
+ - 7x8 True Apple character set (based on Archimedes sprites).
+
+Have fun!
+Benoit Gilon ...

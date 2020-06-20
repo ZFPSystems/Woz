@@ -1,0 +1,9 @@
+| For P.D. library holders
+| Here are the files you should
+| remove before "going to press"
+| (Apple copyrighted material)
+remove <Woz$Dir>.ROM2E
+remove <Woz$Dir>.Floppy1
+remove <Woz$Dir>.D33Systeme
+remove <Woz$Dir>.ADEMAR
+remove <Woz$Dir>.APROG

@@ -1,0 +1,276 @@
+Apple //e emulator user guide (v 0.6)
+
+(c) 1990-91 Benoit GILON.
+
+0. Warning
+0.0 READ THIS PARAGRAPH FIRST....
+
+DUE TO COPYRIGHT CONTINGENCIES, AT THIS DATE (22/11/91) !Woz IS NOT
+A STAND ALONE EMULATOR PROGRAM!!!!
+
+IF YOU DON'T OWN AN APPLE //E|//C|//GS SYSTEM AND DON'T USE ONE AT WORK
+THEN:
+> YOU CAN FORMAT THIS DISK ... FOR MORE USEFUL WORK,
+> WRITE TO APPLE U.K. TO ENCOURAGE THEM GIVING ME THE PERMISSION TO
+  INCLUDE THE FIRMWARE ON DISK FOR DISTRIBUTION
+> STAY TUNED   
+
+0.1 How to get the necessary ROM and disk (DOS 3.3/ProDOS) system files:
+
+Including those files as part of the !Woz emulator without the written
+permission of Apple Inc. would infringe the copyright law.
+
+In order to get the needed pieces of Software, two solutions are at your
+disposal:
+
+- Send a SASE with the following content:
+> An empty and properly "E" formatted (800 Ko) 3'1/2 disk.
+> A copy of your Apple //e|//c|//gs warranty card with the serial number.
+to the following address:
+                 Benoit GILON
+                 15, rue RIBERA
+                 75016 PARIS
+                 FRANCE
+
+- Get those files on your own:
+Here is a guideline to show you how I did:
+
+           RS232C 19200 bauds                  3'1/2 MSDOS disk
+Apple //c \__________________/MSDOS Compatible\_________________/Archimedes
+Apple //e /  CrossWorks 2.0  \(Amiga SideCar) /  !PCDir         \ (ADFS)
+
+> Using 3.5" disks as DOS 3.3 backups Call A.P.P.L.E. August 86 - Sean Nolan
+  (note I have included the source file for converting 5'1/4 as well as
+  3'1/2 disks to ProDOS files).
+> CrossWorks 2.0    Softspoken, Inc. (this is a commercial software)
+> !PCDir            (C) Keith Sloan. (this is a careware distributed by
+                                      Archive)
+Here I would like to thank all those manufacturers and sofware designers
+for the high quality of their products.
+
+1. Introduction
+
+Nowadays hardware and software emulators are strengthening their
+stand in the Computer World as they give a satisfactory solution to
+every human desire: Run programs designed for a computer model X
+on another model (Y)... This means the right to buy the wrong machine.
+
+X can take its value in the following list:
+{ MacIntosh, IBM PC, Atari ST, C64, BBC Model B, ... }
+and Y in:
+{ IBM PC, Amiga, Atari ST, Archimedes ... }
+
+* The Apple // line of computers being widely used in the North American
+education world, it would be useful to run Apple // programs on Archimedes
+along with BBC's.
+
+* Most of the emulators listed above are based on a hardware design as
+software only earlier emulators running on slow CPUs have a performance
+level near zero. The Archimedes computer is the only computer I know for
+which an Apple // software emulator is worth doing.
+
+* Technical details about the 6502 emulator from Acorn being scarce (to say
+  a few), I wrote my own with the Acorn ANSI C (Release 3) package. This
+  version emulates a 65C02 CPU with a clock speed of about 150KHz (less than
+  20% of an Apple // CPU at 1MHz).
+
+Despite its slow speed, I think it's a workable product. Future versions
+will be released with an improved speed. Please consult the paragraph
+entitled 'Features to come' for greater details. !Woz will greatly benefit
+from an ARM3 CPU with cache on.
+
+2. Current version's features:
+
+2.1 How to launch !Woz
+
+- Insert the !Woz disk in drive :0,
+- Check that there's at least 288 Ko free under the Wimp. In case you are in
+  need of RAM memory, you can quit from WIMP based applications or simply
+  exit the Desktop environment by pressing the <Ctrl><Shift><F12>.
+- Under the Desktop, simply click on the !Woz icon to launch the emulator.
+- Under the RISCOS command level ('*' prompt), issue the following commands.
+  *SET Obey$Dir $.!Woz
+  *$.!Woz.!Run
+
+The screen which will appear should be familiar to some.
+
+2.2 So what (you can do now) ...
+
+The emulated Apple //e has the followings:
+- A CPU 65C02 (manufactured by NCR/GTE),
+- Langage card protocol (16 Ko bank switched with
+  ROM),
+- ROM enhanced //e version,
+- Extended 80 col. text card (with 64 Ko RAM auxiliary memory),
+- Mousetext characters, Lores, mixed and page2 graphics are supported,
+- Keyboard softswitches are supported,
+- The Open Apple key is the left Alt key on the Archimedes' keyboard,
+- The Solid Apple key is the right Alt key.
+- The Apple keyboard' Reset key is the break key on the Archimedes:
+  > To cause a warmstart reset, press the <Ctrl><Break> key sequence,
+  > To cause a coldstart reset, press the <Left_ALt><Ctrl><Break> key
+    sequence,
+  > To exit from the emulator, press the <Shift><Ctrl><Break> key
+    sequence.
+- A Drive ][ controler card in the Apple's sixth slot.  A Floppy disk's
+  content is seen as a 140Ko ADFS file for the emulator (just like the
+  MSDOS hard drive partition with the Acorn PC emulator). When you launch
+  !Woz, the emulated Apple //e will boot with a ProDOS 8 system disk.
+  If you wish to change the disk in your "Apple drive", just press the <F1>
+  key when a program waits for a keyboard entry, enter the name of the file
+  which contents the disk you wish to insert; The next coldstart will boot
+  on this "disk" (note that the ADFS disk file should be in the !Woz
+  directory). Please read next chapter for further details about
+  configuration management.
+- ProDOS recognizes the Archimedes internal clock and will use it for its
+  own file datestamping.
+- A program resides on the ProDOS 8 boot disk which copies files to and
+  from ADFS and ProDOS. Consult chapter 5 for further details.
+- Once !Woz is launched you can insert a specially formatted ADFS disk in
+  order to emulate as many Unidisk 3'5 as the number of floppy drives in
+  your Archimedes system.
+- Warning! This emulator's version doesn't provide neither Hires nor
+  Double hires graphics..
+ 
+3. Configuration management under !Woz:
+
+All the configuration options can be selected by using the <F1> key whenever
+the Apple system scan the keyboard address (0xc000); with those commands you
+can emulate the disk swap in a sixth slot's drive, or simply change the way
+the characters are rendered on the screen.
+
+When you press the <F1> key, a message prompt should be printed at the 25th
+screen row: "Filename/Command: ". The option selected is given by the first
+character you type in:
+> "0": You certainly have noticed the switch under your Apple //e keyboard.
+       It serves to toggle between the two character sets available in the
+       video ROM inside your Apple //e. Well the "0" option serves the same
+       purpose. It's based upon the "Local" textfile inside !Woz' directory.
+> "[1]<filename>": Emulates the disk swapping in the sixth slot' first disk
+       drive. You can omit the "1" when the filename itself doesn't begin
+       with a digit.
+> "2<filename>": Same purpose as before for the second disk drive. However
+       the "2" character is mandatory this time.
+> "3": When !Woz is launched, the current BBC 8x8 caracter set is used (with
+       some redesign due to mousetext support). This ensure greatest speed
+       for displaying characters on screen but will cause some "video
+       distorsion" on future Hires mixed modes (with text and graphics
+       displayed at the same time). So I designed 7x8 characters which fit
+       exactly the Apple native charset, this character set is based upon
+       a spritefile inside !Woz' directory. You can toggle between the two
+       methods by choosing this option, the screen is immediately refreshed.
+       I hope you'll enjoy the new appearance of the Archimedes screen.
+
+Note: double quotes, angle brackets and the "[", "]" symbols are not part of
+legal commands. Items between angle brackets are mandatory, items between
+"[" and "]" are optional.
+ 
+4. Archimedes - Apple file copy and conversion:
+
+4.1 Copy:
+!Woz provides a small utility to copy files between the Archimedes and the
+Apple. The copy is of the raw kind on a byte for byte basis (i.e. it
+doesn't care about the source file's type to introduce format conversion).
+
+To copy files between Archimedes' FileSwitch and ProDOS, proceed as below:
+- Launch the !Woz emulator as usual,
+- Ensure that the ProDOS disk named "Floppy1" (ie ADFS file) is on line
+  (refer to the previous chapter if in need).
+- At the BASIC prompt (BASIC.SYSTEM is the system file to run), run the
+  program named TRANS (which resides in the root directory):
+  ]-TRANS
+- At the prompt enter a digit "0" or "1" which tells the program whether you
+  wish to copy a file from or to ProDOS.
+- You will then be asked to enter the Archimedes filename:
+  you can then enter any valid pathname (for FileSwitch), in order to
+  easier the keyboard entry you can use the two macros provided by the
+  TRANS program: These macros are activated by pressing the "O" or "W"
+  keys while holding the LeftAlt/OpenApple key when the cursor is at the
+  beginning of the line.
+  . "O" is the macro key for "<Obey$Dir>." string pattern.
+  . "W" is the macro key for "<Woz$Dir>.".
+- Then enter the ProDOS pathname (full or partial)
+- The copy takes place.
+- If all went well, the program should print "Well done" and prompt for
+  another copy. In case an error (on the ProDOS or FileSwitch side) occured,
+  the messsage "Ooops" is displayed along with an error code. An error code
+  between 0 and 3 means something went wrong on the FileSwitch side:
+  . 0 : Protocol error, the TRANS program tried to open a file for transfer
+        as the previous file opened for a copy is not closed or something
+        like that.
+  . 1 : Open error, the FileSwitch source file you selected for reading
+        doesn't exist or the FileSwitch destination file you selected for
+        writing can't be opened due to the lack of space on the media.
+  . 2 : End of file when reading a FileSwitch source file, you should never
+        see this code on your screen as it is filtered by the TRANS program
+        which ends the copy process.
+  . 3 : Write error probably due to a lack of disk space on the FileSwitch
+        side.
+  Other error codes which may appear are standard ProDOS MLI error codes.
+
+To the fellow Apple programmers, I have included the TRANS source file in
+the !Woz disk as well as in the ProDOS disk (Merlin 8/16 assembly).  
+
+4.2 Text conversion utility:
+
+WTCU is a very simple RISC_OS application to convert textfiles between the
+Archimedes and the Apple. Here are the differences:
+- Contrary to the Archimedes', Apple textfile format only knows about 7 bit
+  ASCII codes (hi bit is always set)
+- Apple EOL character is [8d], Archimedes EOL character is [0a].
+
+In addition & provided that a "local" textfile has been seen before the
+conversion takes place (usualy in the <Woz$Dir> folder), you can tell WTCU to
+convert international characters (i.e. which have a code value > 127 in the
+ISO Latin 1).
+
+5. Features to come...
+
+5.1 What to do next (i.e. next month?)
+
+- Provide disk caching for Unidisk 3'5 I/O, standard Apple ProDOS I/O units
+  are 512 bytes wide blocks, ADFS sectors are 1024 bytes wide...
+- Program to exchange files between DOS 3.3 and FileSwitch.
+- A RISCOS application to convert Applesoft BASIC programs to Archimedes
+  BBC BASIC format.
+- Apple Protocol RAM disk support in the RAMFS free space.
+
+5.2 At a later stage (i.e. next year?)
+
+- Hires & double hires graphics.
+- A RISCOS application to easier file transfer thru a serial link
+  between the Archimedes and an Apple //.
+
+6. Software running under !Woz:
+
+> Merlin 8 v2.58 ProDOS version & v2.48 DOS 3.3 version,
+> AppleWorks 1.4 (localized french version),
+> ProSel 8 (by Glen Bredon), program launcher and useful utilities,
+> ZBASIC compiler ProDOS 64Ko and 128 Ko versions (don't be afraid by
+  what should be the ZBASIC Welcome Hires screen),
+> Copy ][+ v9.0, ProDOS disk utilities, all file relative options work.
+  Of course, bit copy routines as well as cataloging a DOS 3.3 disk
+  hang up (I guess it uses its own routines instead of calling the ProDOS
+  READ_BLOCK/WRITE_BLOCK MLI sub.).
+
+	As a bonus, if you wish to mutate your legally purchased
+Apple unlocked software under !Woz, just send me a warranty card (+ a copy
+disk of your software if it does'nt belong to the previous list),
+an ADFS E formatted 3'1/2 disk and return postage; I'll send it back to
+you ready to run under !Woz (plan for a delay of two weeks for Europe).
+
+7. Final notes:
+
+- The Watford ARM3support module's hot keys to toggle the CPU speed
+  (LeftAlt/LeftShift/LeftControl) have a special meaning under !Woz too.
+  So don't forget to correct the speed after a !Woz "cold start" for example.
+- Under RISC OS 3.5 (on RISC PCs), RMKilling the InternationalKeyboard Module leads
+  to an internal address error therefore you HAVE TO comment the lines below in the !Run file
+  of the !Woz application:
+RMEnsure InternationalKeyboard 0 set IK$flag 0 <<<<<<
+if "<IK$flag>"="1" then RMKill InternationalKeyboard <<<<<<<
+... | Executes the !RunImage program inside the directory.
+if "<IK$flag>"="1" then RMReInit InternationalKeyboard <<<<<<<
+unset IK$flag  <<<<<
+However, facilities such as emulating the "open apple" key with the left alt key
+won't be there anymore (they are trapped by the IK module).

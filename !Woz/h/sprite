@@ -1,0 +1,8 @@
+
+int d_return(int err);
+
+char sprite_init(void);
+
+void sprite_rloc(void);
+
+

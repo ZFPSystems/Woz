@@ -1,0 +1,10 @@
+extern EightBitCode *AppleCode;
+extern u_int Reg_PC, fsa1;
+#ifdef ARM
+extern TypGlb Glob;
+#else
+extern u_char Reg_A, Reg_X, Reg_Y, Reg_S, Reg_P;
+extern u_int offread[256];
+#endif
+extern u_char bgv1;
+extern u_int offwrite[256];
