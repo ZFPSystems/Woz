@@ -1,33 +1,75 @@
+####
+# Woz32 building process
+# Port by Paolo Fabio Zaino
+# Original code by Benoit Gilon
+####
+
 #LIB=$.Clib.o.Stubs $.RISC_OSlib.o.RISC_OSlib # Use shared C library
+
 LIB=C:o.Stubs RISC_OSlib:o.RISC_OSlib # Use shared C library
+CCFlags=-c -depend !Depend -throwback -apcs 3/32/fpe2/swst/fp/nofpr
+ASMFlags=--throwback --regnames=callstd  --apcs=3/32/fpe2/swst/fp/nofpr --32 --cpu=7
 
 !RunImage:   Simulator.o Fetch.o EMuRead.o EmuOp.o Adressage.o CodeOp.o EmuWrite.o Sprite.o Splot.o
  link -o !RunImage Simulator.o Fetch.o EmuRead.o Adressage.o EmuOp.o CodeOp.o EmuWrite.o Sprite.o SPlot.o $(LIB)
  squeeze !RunImage
 
 Simulator.o: Simulator.c general.h
- cc -c -zpnocheck_stack -IRISC_OSlib: Simulator.c
+ cc $(CCFlags) -zpnocheck_stack -IRISC_OSlib: Simulator.c
 
 Fetch.o: Fetch.s FetchInc.s
- objasm -FROM s.Fetch -TO o.Fetch -S -Q -C
+ objasm $(ASMFlags) -FROM s.Fetch -TO o.Fetch -S -Q -C
 
 EmuRead.o: EmuRead.c general.h Externals.h
- cc -c -zpnocheck_stack -IRISC_OSlib: EmuRead.c
+ cc $(CCFlags) -zpnocheck_stack -IRISC_OSlib: EmuRead.c
 
 EmuOp.o:     EmuOp.c general.h Externals.h
- cc -c -zpnocheck_stack -IRISC_OSlib: EmuOp.c
+ cc $(CCFlags) -zpnocheck_stack -IRISC_OSlib: EmuOp.c
 
 EmuWrite.o:  EmuWrite.c general.h Externals.h
- cc -c -zpnocheck_stack -IRISC_OSlib: EmuWrite.c
+ cc $(CCFlags) -zpnocheck_stack -IRISC_OSlib: EmuWrite.c
 
 Adressage.o: Adressage.s
- objasm -FROM s.Adressage -TO o.Adressage -S -Q -C
+ objasm $(ASMFlags) -FROM s.Adressage -TO o.Adressage -S -Q -C
 
 CodeOp.o:    CodeOp.s
- objasm -FROM s.CodeOp -TO o.CodeOp -S -Q -C
+ objasm $(ASMFlags) -FROM s.CodeOp -TO o.CodeOp -S -Q -C
 
 Sprite.o:    Sprite.c general.h
- cc -c -zpnocheck_stack -IRISC_OSlib: Sprite.c
+ cc $(CCFlags) -zpnocheck_stack -IRISC_OSlib: Sprite.c
 
 SPlot.o:     SPlot.s
- objasm -FROM s.SPlot -TO o.SPlot -S -Q -C
+ objasm $(CCFlags) -FROM s.SPlot -TO o.SPlot -S -Q -C
+
+# Dynamic dependencies:
+o.SPlot: s.SPlot
+o.Simulator:	c.Simulator
+o.Simulator:	C:h.kernel
+o.Simulator:	RISCOSLib:h.bbc
+o.Simulator:	RISCOSLib:h.os
+o.Simulator:	RISCOSLib:h.sprite
+o.Simulator:	h.general
+o.EmuRead:	c.EmuRead
+o.EmuRead:	C:h.kernel
+o.EmuRead:	RISCOSLib:h.bbc
+o.EmuRead:	RISCOSLib:h.os
+o.EmuRead:	h.general
+o.EmuRead:	h.Externals
+o.EmuOp:	c.EmuOp
+o.EmuOp:	RISCOSLib:h.bbc
+o.EmuOp:	RISCOSLib:h.os
+o.EmuOp:	C:h.kernel
+o.EmuOp:	h.general
+o.EmuOp:	h.Externals
+o.EmuWrite:	c.EmuWrite
+o.EmuWrite:	RISCOSLib:h.bbc
+o.EmuWrite:	RISCOSLib:h.os
+o.EmuWrite:	C:h.kernel
+o.EmuWrite:	RISCOSLib:h.sprite
+o.EmuWrite:	h.general
+o.EmuWrite:	h.Externals
+o.Sprite:	c.Sprite
+o.Sprite:	RISCOSLib:h.sprite
+o.Sprite:	RISCOSLib:h.os
+o.Sprite:	C:h.kernel
+o.Sprite:	h.general
