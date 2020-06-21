@@ -1,4 +1,6 @@
 .history/*
-./Boot/*
 .vscode/
+Boot/*
+Boot/ROM2E
+Boot/Floppy1*
 
