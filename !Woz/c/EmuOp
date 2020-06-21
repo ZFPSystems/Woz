@@ -26,350 +26,365 @@ FILE *mdD = NULL;
 #define	NVECT	4
 static BOOL (*VEmuOp[NVECT])();
 static const u_int numvec[NVECT] =
-	{
+{
 	8, 9, 0xbd, 0x100
-	};
+};
 
 BOOL (*EmulOp[SIZE_CODE>>8])(); /* Ceci est un prototype */
 
 void Fantasia(void)
 {
-extern BOOL amode;
-if(amode)
+	extern BOOL amode;
+	if(amode)
 	{
-	bbc_tab(0,25); bbc_colour(15); bbc_colour(128);
+		bbc_tab(0,25); bbc_colour(15); bbc_colour(128);
 	}
 }
 
 void Retour(void)
 {
-extern BOOL amode;
-if(amode)
+	extern BOOL amode;
+	if(amode)
 	{
-	u_char ip;
-	extern u_char oldcol0, oldcol1;
-	static const char effacement[] =
+		u_char ip;
+		extern u_char oldcol0, oldcol1;
+		static const char effacement[] =
 		{
-		bbc_MultiPurpose, 8, 5, 10, 0, 0, 0, 0, 0, 0
+			bbc_MultiPurpose, 8, 5, 10, 0, 0, 0, 0, 0, 0
 		};
-	bbc_tab(0,25);
-	bbc_cursor(0);
-	for(ip=0; ip<sizeof(effacement); ip++) bbc_vdu(effacement[ip]);
-	bbc_colour(oldcol0); bbc_colour(oldcol1);
+		bbc_tab(0,25);
+		bbc_cursor(0);
+		for(ip=0; ip<sizeof(effacement); ip++) bbc_vdu(effacement[ip]);
+		bbc_colour(oldcol0); bbc_colour(oldcol1);
 	}
 }
 
 FILE *mfopen(const char *filename, const char *mode)
 {
-FILE *result;
-Fantasia();
-result= fopen(filename, mode);
-Retour();
-return(result);
+	FILE *result;
+	Fantasia();
+	result= fopen(filename, mode);
+	Retour();
+	return(result);
 }
 
 int mfclose(FILE *stream)
 {
-int result;
-Fantasia();
-result= fclose(stream);
-Retour();
-return(result);
+	int result;
+	Fantasia();
+	result= fclose(stream);
+	Retour();
+	return(result);
 }
 
 size_t mfread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
-size_t result;
-Fantasia();
-result= fread(ptr,size,nmemb,stream);
-Retour();
-return(result);
+	size_t result;
+	Fantasia();
+	result= fread(ptr,size,nmemb,stream);
+	Retour();
+	return(result);
 }
 
 size_t mfwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
-size_t result;
-Fantasia();
-result= fwrite(ptr,size,nmemb,stream);
-Retour();
-return(result);
+	size_t result;
+	Fantasia();
+	result= fwrite(ptr,size,nmemb,stream);
+	Retour();
+	return(result);
 }
 
 int mfseek(FILE *stream, long int offset, int whence)
 {
-int result;
-Fantasia();
-result= fseek(stream, offset, whence);
-Retour();
-return(result);
+	int result;
+	Fantasia();
+	result= fseek(stream, offset, whence);
+	Retour();
+	return(result);
 }
 
 void ValidateRead(u_char *tampon,u_int buffadr, int length)
 {
-extern BOOL (*EmuWrite[SIZE_CODE>>8])(u_int ax, u_char vx);
-extern u_int offwrite[256];
-extern char allowwrite[SIZE_CODE>>8];
-u_int p;
-for(p=0; p<length; p++)
+	extern BOOL (*EmuWrite[SIZE_CODE>>8])(u_int ax, u_char vx);
+	extern u_int offwrite[256];
+	extern char allowwrite[SIZE_CODE>>8];
+	u_int p;
+	for(p=0; p<length; p++)
 	{
-	u_int a1, a2, a3;
-	a1 = buffadr+p;
-	if(EmuWrite[a3=(a2=a1+offwrite[a1>>8])>>8])
-		if((*EmuWrite[a3])(a2,tampon[p])) continue;
-	if(allowwrite[a3])
-		AppleCode->bytes[a2]= tampon[p];
+		u_int a1, a2, a3;
+		a1 = buffadr+p;
+		if(EmuWrite[a3=(a2=a1+offwrite[a1>>8])>>8])
+			if((*EmuWrite[a3])(a2,tampon[p])) continue;
+		if(allowwrite[a3])
+			AppleCode->bytes[a2]= tampon[p];
 	}
 }
 
 BOOL Ec0(pfb)
 u_char pfb;
 {
-extern u_char ResPil(void);
-u_char i;
-static BOOL ModeWrite = FALSE;
-BOOL mirror = FALSE;
-size_t len, lulen;
-static BOOL flageof = FALSE;
+	extern u_char ResPil(void);
+	u_char i;
+	static BOOL ModeWrite = FALSE;
+	BOOL mirror = FALSE;
+	size_t len, lulen;
+	static BOOL flageof = FALSE;
 
-switch(pfb)
+	switch(pfb)
 	{
-	case 0:
-		if(mdD)
+		case 0:
+			if(mdD)
 			{
-			Reg_A= 0;
-			mirror = TRUE;
-			break;
+				Reg_A= 0;
+				mirror = TRUE;
+				break;
 			}
-		ModeWrite= ((Reg_P & BITC) != 0);
-		mdD= mfopen((char *) &Lire_Code(Reg_X+(Reg_Y<<8)),
-			ModeWrite ? "wb" : "rb");
-		if(!mdD)
+			ModeWrite= ((Reg_P & BITC) != 0);
+			mdD= mfopen((char *) &Lire_Code(Reg_X+(Reg_Y<<8)),
+						ModeWrite ? "wb" : "rb");
+			if(!mdD)
 			{
-			Reg_A= 1;
-			mirror = TRUE;
-			}
-		else	flageof= FALSE;
-		break;
-	case 1: /* read a byte from an Archimedes file */
-		if(!mdD || ModeWrite)
-			{
-			Reg_A= 0;
-			mirror= TRUE;
-			break;
-			}
-		if(flageof)
-			{
-			Reg_A= 2;
-			mirror= TRUE;
-			break;
-			}
-		lulen= mfread((char *) &Lire_Code(Reg_X+(Reg_Y<<8)), 1,
-			len= (size_t) (Reg_A == 0 ? 256 : Reg_A), mdD);
-		if(lulen!= len)
-			{
-			flageof= (feof(mdD)!= 0);
-			if(flageof) Reg_A= lulen;
-			else
-				{
 				Reg_A= 1;
+				mirror = TRUE;
+			}
+			else
+			{
+				 flageof= FALSE;
+			}
+			break;
+		case 1: /* read a byte from an Archimedes file */
+			if(!mdD || ModeWrite)
+			{
+				Reg_A= 0;
 				mirror= TRUE;
+				break;
+			}
+			if(flageof)
+			{
+				Reg_A= 2;
+				mirror= TRUE;
+				break;
+			}
+			lulen= mfread((char *) &Lire_Code(Reg_X+(Reg_Y<<8)), 1,
+			len= (size_t) (Reg_A == 0 ? 256 : Reg_A), mdD);
+			if(lulen!= len)
+			{
+				flageof= (feof(mdD)!= 0);
+				if(flageof)
+				{
+					 Reg_A= lulen;
+				}
+				else
+				{
+					Reg_A= 1;
+					mirror= TRUE;
 				}
 			}
-		else	Reg_A= (lulen == 256) ? 0 : lulen;
-		break;
-	case 2: /* write a single byte to an Archimedes file */
-		if(!mdD || !ModeWrite)
+			else
 			{
-			Reg_A= 0;
-			mirror= TRUE;
+				 Reg_A= (lulen == 256) ? 0 : lulen;
+			}
 			break;
-			}
-		len= (size_t) (Reg_A == 0 ? 256 : Reg_A);
-		if(mfwrite((char *) &Lire_Code(Reg_X+(Reg_Y<<8)), 1, len, mdD)!= len)
+		case 2: /* write a single byte to an Archimedes file */
+			if(!mdD || !ModeWrite)
 			{
-			Reg_A= 3;
-			mirror= TRUE;
+				Reg_A= 0;
+				mirror= TRUE;
+				break;
 			}
-		break;
-	case 3:
-		if(!mdD)
+			len= (size_t) (Reg_A == 0 ? 256 : Reg_A);
+			if(mfwrite((char *) &Lire_Code(Reg_X+(Reg_Y<<8)), 1, len, mdD)!= len)
 			{
-			mirror= TRUE;
+				Reg_A= 3;
+				mirror= TRUE;
+			}
 			break;
+		case 3:
+			if(!mdD)
+			{
+				mirror= TRUE;
+				break;
 			}
-		mfclose(mdD); mdD = NULL;
-		break;
-	default:
-		return(FALSE);
+			mfclose(mdD); mdD = NULL;
+			break;
+		default:
+			return(FALSE);
 	}
-if(mirror)	Reg_P|= BITC;
-else	Reg_P&= ~BITC;
-i=ResPil(); Reg_PC=(ResPil()<<8)+i;
-return(TRUE);
+	if(mirror)
+	{
+		 Reg_P|= BITC;
+	}
+	else
+	{
+		 Reg_P&= ~BITC;
+	}
+	i=ResPil(); Reg_PC=(ResPil()<<8)+i;
+	return(TRUE);
 }
 
 BOOL Ec1(pfb)
 u_char pfb;
 {
-switch(pfb)
+	switch(pfb)
 	{
-	extern BOOL Xscroll(void);
-	case 0x23:
-		Reg_Y= 1;
-		if(Xscroll())
+		extern BOOL Xscroll(void);
+		case 0x23:
+			Reg_Y= 1;
+			if(Xscroll())
 			{
-			Reg_PC= 0xc148-1;
-			return(TRUE);
+				Reg_PC= 0xc148-1;
+				return(TRUE);
 			}
 	}
-return(FALSE);
+	return(FALSE);
 }
 
 BOOL Ecb(pfb)
 u_char pfb;
 {
-switch(pfb)
+	switch(pfb)
 	{
-	extern BOOL Xscroll(void);
-	case 0x21:
-		Reg_PC=0xcb30-1;
-		bbc_vdu(bbc_Bell); /* Instruction pour VDU bell */
-		Reg_Y = 1;
-		return(TRUE);
-	case 0xef: /* Scroll video */
-		if(Xscroll())
-			{
-			Reg_PC= 0xcc6b-1;
+		extern BOOL Xscroll(void);
+		case 0x21:
+			Reg_PC=0xcb30-1;
+			bbc_vdu(bbc_Bell); /* Instruction pour VDU bell */
+			Reg_Y = 1;
 			return(TRUE);
+		case 0xef: /* Scroll video */
+			if(Xscroll())
+			{
+				Reg_PC= 0xcc6b-1;
+				return(TRUE);
 			}
 	}
-return(FALSE);
+	return(FALSE);
 }
 
 BOOL Efb(pfb)
 u_char pfb;
 {
-switch(pfb)
+	switch(pfb)
 	{
-	case 0xdd:
-		Reg_PC=0xfbec-1;
-		bbc_vdu(bbc_Bell); /* Instruction pour VDU bell */
-		Reg_Y = 1;
-		return(TRUE);
+		case 0xdd:
+			Reg_PC=0xfbec-1;
+			bbc_vdu(bbc_Bell); /* Instruction pour VDU bell */
+			Reg_Y = 1;
+			return(TRUE);
 	}
-return(FALSE);
+	return(FALSE);
 }
 
 /* Emulation de la routine RWTS (en beaucoup plus court!) (sic) */
 BOOL Ebd(u_char pfb)
 {
-/* Table de conversion secteur logique DOS 3.3/offset dans le fichier */
-static u_int logconv[16] =
+	/* Table de conversion secteur logique DOS 3.3/offset dans le fichier */
+	static u_int logconv[16] =
 	{
-	(0*2+0)<<8,(7*2+0)<<8,(6*2+1)<<8,(6*2+0)<<8,
-	(5*2+1)<<8,(5*2+0)<<8,(4*2+1)<<8,(4*2+0)<<8,
-	(3*2+1)<<8,(3*2+0)<<8,(2*2+1)<<8,(2*2+0)<<8,
-	(1*2+1)<<8,(1*2+0)<<8,(0*2+1)<<8,(7*2+1)<<8
+		(0*2+0)<<8,(7*2+0)<<8,(6*2+1)<<8,(6*2+0)<<8,
+		(5*2+1)<<8,(5*2+0)<<8,(4*2+1)<<8,(4*2+0)<<8,
+		(3*2+1)<<8,(3*2+0)<<8,(2*2+1)<<8,(2*2+0)<<8,
+		(1*2+1)<<8,(1*2+0)<<8,(0*2+1)<<8,(7*2+1)<<8
 	};
-FILE *dD;
-switch(pfb)
+	FILE *dD;
+	switch(pfb)
 	{
-	u_int iobpl;
-	u_char iD;
-	u_char command,track,sector;
-	case 0x83:
-		iobpl = Lire_Code(0x48) +(Lire_Code(0x49)<<8);
-		if((iD=Lire_Code(iobpl+0x02)) > 2 || Reg_X!= 0x60)
+		u_int iobpl;
+		u_char iD;
+		u_char command,track,sector;
+		case 0x83:
+			iobpl = Lire_Code(0x48) +(Lire_Code(0x49)<<8);
+			if((iD=Lire_Code(iobpl+0x02)) > 2 || Reg_X!= 0x60)
 			{
-			Reg_PC = 0xbe05 - 1;
-			return(TRUE);
-			}
-		if(!(dD=drive_DOS[iD-1]))
-			{
-			Reg_PC = 0xbe05 - 1;
-			return(TRUE);
-			}
-		if((command=Lire_Code(iobpl+0x0c)) == 4) ;
-		else
-			{
-			if(	(track=Lire_Code(iobpl+0x04)) > 0x22 ||
-				(sector=Lire_Code(iobpl+0x05)) > 0x0f)
 				Reg_PC = 0xbe05 - 1;
+				return(TRUE);
+			}
+			if(!(dD=drive_DOS[iD-1]))
+			{
+				Reg_PC = 0xbe05 - 1;
+				return(TRUE);
+			}
+			if((command=Lire_Code(iobpl+0x0c)) == 4) ;
 			else
+			{
+				if(	(track=Lire_Code(iobpl+0x04)) > 0x22 ||
+					(sector=Lire_Code(iobpl+0x05)) > 0x0f)
+					Reg_PC = 0xbe05 - 1;
+				else
 				{
-				extern void OpPLP(void);
-				u_int buffadr;
-				u_char tampon[256];
-				buffadr= Lire_Code(iobpl+0x08) + (Lire_Code(iobpl+0x09)<<8);
-				mfseek(dD,(track<<12) | logconv[sector],SEEK_SET);
-				if((command=Lire_Code(iobpl+0x0c))!= 0)
+					extern void OpPLP(void);
+					u_int buffadr;
+					u_char tampon[256];
+					buffadr= Lire_Code(iobpl+0x08) + (Lire_Code(iobpl+0x09)<<8);
+					mfseek(dD,(track<<12) | logconv[sector],SEEK_SET);
+					if((command=Lire_Code(iobpl+0x0c))!= 0)
 					{
-					if(command & 1)
+						if(command & 1)
 						{
-						fread((void *) tampon,256,1,dD);
-						ValidateRead(tampon, buffadr, 256);
+							fread((void *) tampon,256,1,dD);
+							ValidateRead(tampon, buffadr, 256);
 						}
-					else
-						fwrite((void *) &(AppleCode->bytes[buffadr]),256,1,
-							dD);
+						else
+							fwrite((void *) &(AppleCode->bytes[buffadr]),256,1,dD);
 					}
-				OpPLP();
-				Reg_PC = 0xbe46 - 1;
+					OpPLP();
+					Reg_PC = 0xbe46 - 1;
 				}
-			return(TRUE);
+				return(TRUE);
 			}
 	}
-return(FALSE);
+	return(FALSE);
 }
 
 /* Driver horloge pour ProDOS */
 BOOL Eclock(pfb)
 u_char pfb;
 {
-extern u_char ResPil(void);
+	extern u_char ResPil(void);
 
-switch(pfb)
+	switch(pfb)
 	{
-	u_char i;
-	time_t t;
-	struct tm *local;
-	char timestring[30];
-	case 0x08:
-		t= time(NULL);
-		local= localtime(&t);
-		sprintf(timestring,"%2d,%2d,%2d,%2d,%2d",local->tm_mon+1,local->tm_wday,local->tm_mday,local->tm_hour,local->tm_min);
-		for(i=0; i<strlen(timestring); i++)
-			AppleCode->bytes[0x200+offread[0x0200>>8]+i]= timestring[i] | 0x80;
-		AppleCode->bytes[0x200+offread[0x200>>8]+i]= 0x8d;
-		Reg_X= i;
-	case 0x0b:
-		Reg_P &= ~BITC;
-		i=ResPil(); Reg_PC=(ResPil()<<8)+i;
-		return(TRUE);
+		u_char i;
+		time_t t;
+		struct tm *local;
+		char timestring[30];
+		case 0x08:
+			t= time(NULL);
+			local= localtime(&t);
+			sprintf(timestring,"%2d,%2d,%2d,%2d,%2d",local->tm_mon+1,local->tm_wday,local->tm_mday,local->tm_hour,local->tm_min);
+			for(i=0; i<strlen(timestring); i++)
+				AppleCode->bytes[0x200+offread[0x0200>>8]+i]= timestring[i] | 0x80;
+			AppleCode->bytes[0x200+offread[0x200>>8]+i]= 0x8d;
+			Reg_X= i;
+		case 0x0b:
+			Reg_P &= ~BITC;
+			i=ResPil(); Reg_PC=(ResPil()<<8)+i;
+			return(TRUE);
 	}
-return(FALSE);
+	return(FALSE);
 }
 
 #ifdef RAMSLOT
 BOOL Edeb(u_char pfb)
 {
-/*bbc_tab(0,25); printf("%2x",pfb); getchar();*/
-/*if(pfb == 0)
+	/*bbc_tab(0,25); printf("%2x",pfb); getchar();*/
+	/*if(pfb == 0)
 	{
-	printf("rA %2x\n",Reg_A);
-	(void) getchar();
+		printf("rA %2x\n",Reg_A);
+		(void) getchar();
 	}
-return(FALSE);*/
+	return(FALSE);*/
 }
 
 /* Determination de la quantite de memoire sur la Ramcard */
 BOOL Es4c9(pfb)
 u_char pfb;
 {
-extern u_int ramsize;
+	extern u_int ramsize;
 
-if(pfb == 0x70) Reg_A= ramsize;
-return(FALSE);
+	if(pfb == 0x70) Reg_A= ramsize;
+
+	return(FALSE);
 }
 
 /* Routine de construction du dieectory racine sur la RAM card */
@@ -377,98 +392,98 @@ BOOL Es4ca(pfb)
 u_char pfb;
 {
 
-switch(pfb)
+	switch(pfb)
 	{
 #define ZERS 0xfd
 #define SKPFE 0xfe
 #define SIZEFLG 0xfc
 #define NAMEFLG 0xaa
-	extern FILE *Ramfile;
-	char i;
-	u_int cattbl;
-	char dbuffer[256];
-	u_char fpos;
-	BOOL fin;
-	case 0x26:	/* Table d'allocation */
-		(void) fwrite((void *) &Reg_A, 1, 1, Ramfile);
-		Reg_PC+= 2;
-		return(TRUE);
-	case 0x67:	/* Makecat entry */
-		cattbl= Reg_A + (Reg_X<<8);
-		fpos= 0; fin= FALSE;
-/*		printf("rA %2x rX %2x rY %2x\n",Reg_A,Reg_X,Reg_Y); */
-		rewind(Ramfile);
-		memset((void *) dbuffer, 0, sizeof(dbuffer));
-		for(i=0; i<16; i++)
-			(void) fwrite((void *) dbuffer, sizeof(dbuffer),1,Ramfile);
-		(void) fseek(Ramfile, 0x400, SEEK_SET);
-		do	{
-			/* Get next byte from the table */
-			u_char cmd;
-			Reg_Y++; cmd= Lire_Code(cattbl+Reg_Y);
-			switch(cmd)
+		extern FILE *Ramfile;
+		char i;
+		u_int cattbl;
+		char dbuffer[256];
+		u_char fpos;
+		BOOL fin;
+		case 0x26:	/* Table d'allocation */
+			(void) fwrite((void *) &Reg_A, 1, 1, Ramfile);
+			Reg_PC+= 2;
+			return(TRUE);
+		case 0x67:	/* Makecat entry */
+			cattbl= Reg_A + (Reg_X<<8);
+			fpos= 0; fin= FALSE;
+/*			printf("rA %2x rX %2x rY %2x\n",Reg_A,Reg_X,Reg_Y); */
+			rewind(Ramfile);
+			memset((void *) dbuffer, 0, sizeof(dbuffer));
+			for(i=0; i<16; i++)
+				(void) fwrite((void *) dbuffer, sizeof(dbuffer),1,Ramfile);
+			(void) fseek(Ramfile, 0x400, SEEK_SET);
+			do	{
+				/* Get next byte from the table */
+				u_char cmd;
+				Reg_Y++; cmd= Lire_Code(cattbl+Reg_Y);
+				switch(cmd)
 				{
-				case ZERS:
-/*					puts("ZERS"); */
-					Reg_Y++; cmd= Lire_Code(cattbl+Reg_Y);
-				case SKPFE:
-/*					if(cmd== SKPFE) puts("SKPFE"); */
-					if(cmd)	{
-						memset((void *) dbuffer, 0, cmd);
-						(void) fwrite((void *) dbuffer,cmd,1,Ramfile);
-						fpos+= cmd;
-						}
-					else	{
-						if(fpos)	{
-							memset((void *) dbuffer,0,256- fpos);
-							(void) fwrite((void *) dbuffer,256-fpos,1,Ramfile);
-							fpos= 0;
-							}
+					case ZERS:
+/*						puts("ZERS"); */
 						Reg_Y++; cmd= Lire_Code(cattbl+Reg_Y);
-						fin= (cmd == 0);
-						if(!fin)
+					case SKPFE:
+/*						if(cmd== SKPFE) puts("SKPFE"); */
+						if(cmd)	{
+							memset((void *) dbuffer, 0, cmd);
+							(void) fwrite((void *) dbuffer,cmd,1,Ramfile);
+							fpos+= cmd;
+						}
+						else
+						{
+							 if(fpos)
+							 {
+								memset((void *) dbuffer,0,256- fpos);
+								(void) fwrite((void *) dbuffer,256-fpos,1,Ramfile);
+								fpos= 0;
+							}
+							Reg_Y++; cmd= Lire_Code(cattbl+Reg_Y);
+							fin= (cmd == 0);
+							if(!fin)
 							{
-							Reg_Y++; cmd= Lire_Code(cattbl+Reg_Y); Reg_Y++;
-							(void) fseek(Ramfile,
-								(cmd<<8)+(Lire_Code(cattbl+Reg_Y))<<16,
-								SEEK_SET);
-							fpos= 0;
+								Reg_Y++; cmd= Lire_Code(cattbl+Reg_Y); Reg_Y++;
+								(void) fseek(Ramfile,
+											(cmd<<8)+(Lire_Code(cattbl+Reg_Y))<<16, SEEK_SET);
+								fpos= 0;
 							}
 						}
-					break;
-				case NAMEFLG:
-				case SIZEFLG:
-/*					if(cmd == SIZEFLG) puts("SIZEFLG");
-					else
-						if(cmd == NAMEFLG) puts("NAMEFLG"); */
-					cmd= (cmd==SIZEFLG) ? Lire_Code(0x478) :
-						(Lire_Code(0x07f8) ^ 0xf0);
-				default:
-					dbuffer[0]= cmd;
-					(void) fwrite((void *) dbuffer,1,1,Ramfile);
-					fpos++;
+						break;
+					case NAMEFLG:
+					case SIZEFLG:
+/*						if(cmd == SIZEFLG) puts("SIZEFLG");
+						else
+							if(cmd == NAMEFLG) puts("NAMEFLG"); */
+						cmd= (cmd==SIZEFLG) ? Lire_Code(0x478) :
+							 (Lire_Code(0x07f8) ^ 0xf0);
+					default:
+						dbuffer[0]= cmd;
+						(void) fwrite((void *) dbuffer,1,1,Ramfile);
+						fpos++;
 				}
 			}
-		while(!fin);
-		break;
-	case 0x72: /* SEEK avant lecture */
-	case 0xc1: /* SEEK avant ecriture */
-		(void) fseek(Ramfile,
-			Lire_Code(0x49)+(Lire_Code(0x4a)<<8)+(Reg_A<<16),
-			SEEK_SET);
-		break;
-	case 0x89:	/* Transfert RAM disk vers memoire */
-	case 0x9e:
-	case 0xa1:
-		(void) fread((void*) &Reg_A, 1,1,Ramfile);
-		break;
-	case 0xda:	/* Transfert memoire vers RAM disk */
-	case 0xdd:
-	case 0xf2:
-	case 0xf5:
-		(void) fwrite((void *) &Reg_A,1,1,Ramfile);
+			while(!fin);
+			break;
+		case 0x72: /* SEEK avant lecture */
+		case 0xc1: /* SEEK avant ecriture */
+				(void) fseek(Ramfile,
+				Lire_Code(0x49)+(Lire_Code(0x4a)<<8)+(Reg_A<<16), SEEK_SET);
+				break;
+		case 0x89:	/* Transfert RAM disk vers memoire */
+		case 0x9e:
+		case 0xa1:
+				(void) fread((void*) &Reg_A, 1,1,Ramfile);
+				break;
+		case 0xda:	/* Transfert memoire vers RAM disk */
+		case 0xdd:
+		case 0xf2:
+		case 0xf5:
+				(void) fwrite((void *) &Reg_A,1,1,Ramfile);
 	}
-return(FALSE);
+	return(FALSE);
 }
 #endif
 
@@ -479,285 +494,286 @@ u_int block;
 BOOL Write;
 u_char *tampon;
 {
-static os_regset mreg;
-static u_char dbuffer[1024];
-os_error *Terror;
-u_int sector= block>>1;
+	static os_regset mreg;
+	static u_char dbuffer[1024];
+	os_error *Terror;
+	u_int sector= block>>1;
 
-mreg.r[1]= 1; mreg.r[2]= (driveno<<29)+(sector<<10);
-mreg.r[3]= (int) dbuffer; mreg.r[4]= 1024;
+	mreg.r[1]= 1; mreg.r[2]= (driveno<<29)+(sector<<10);
+	mreg.r[3]= (int) dbuffer; mreg.r[4]= 1024;
 #ifdef DEBUG
-if(Write)
+	if(Write)
 	{
-	u_char p;
-	printf("swi: drive %d block %d\n",driveno,block);
-	for(p=0; p<5; p++) printf("%x ",mreg.r[p]);
-	putchar('\n');
-	getchar(); getchar();
+		u_char p;
+		printf("swi: drive %d block %d\n",driveno,block);
+		for(p=0; p<5; p++) printf("%x ",mreg.r[p]);
+		putchar('\n');
+		getchar(); getchar();
 	}
 #endif
-Terror= os_swix(ADFS_DiscOp, &mreg);
-if(!Terror)
+	Terror= os_swix(ADFS_DiscOp, &mreg);
+	if(!Terror)
 	{
-	if(Write)
+		if(Write)
 		{
-		memcpy((void *) (dbuffer + ((block & 1) ? 512 : 0)), tampon, 512);
-		mreg.r[1]= 2; mreg.r[2]= (driveno<<29)+(sector<<10) /*+1024*/;
-		mreg.r[3]= (int) dbuffer; mreg.r[4]= 1024;
-		Terror= os_swix(ADFS_DiscOp, &mreg);
+			memcpy((void *) (dbuffer + ((block & 1) ? 512 : 0)), tampon, 512);
+			mreg.r[1]= 2; mreg.r[2]= (driveno<<29)+(sector<<10) /*+1024*/;
+			mreg.r[3]= (int) dbuffer; mreg.r[4]= 1024;
+			Terror= os_swix(ADFS_DiscOp, &mreg);
 		}
-	else	memcpy(tampon,(void *) (dbuffer + ((block & 1) ? 512 : 0)), 512);
+		else
+		{
+			 memcpy(tampon,(void *) (dbuffer + ((block & 1) ? 512 : 0)), 512);
+		}
 	}
-return(Terror);
+	return(Terror);
 }
 
 /* ProDOS Unidisk device driver */
 void handleProDOS(void)
 {
-static const u_char validunit[4] =
+	static const u_char validunit[4] =
 	{
-	0x05, 0x0d, 0x01, 0x09
+		0x05, 0x0d, 0x01, 0x09
 	};
-u_char command, driveno;
-os_error *Terror;
 
-u_char *idunit= memchr(validunit, Lire_Code(0x43)>>4, 4);
-if(!idunit)
+	 u_char command, driveno;
+	os_error *Terror;
+
+	u_char *idunit= memchr(validunit, Lire_Code(0x43)>>4, 4);
+	if(!idunit)
 	{
-	Reg_A= 0x28;
-	Reg_P|= BITC; Reg_P&= ~BITZ;
-	return;
+		Reg_A= 0x28;
+		Reg_P|= BITC; Reg_P&= ~BITZ;
+		return;
 	}
-driveno= (u_char) (idunit-validunit);
-switch(command=Lire_Code(0x42))
+	driveno= (u_char) (idunit-validunit);
+	switch(command=Lire_Code(0x42))
 	{
-	u_int p;
-	u_char tampon[512];
-	u_int buffadr, block;
-	case 0: /* STATUS command */
-		Terror= RWBlock(driveno,(u_int) 0,FALSE,tampon);
-		if(Terror)
+		u_int p;
+		u_char tampon[512];
+		u_int buffadr, block;
+		case 0: /* STATUS command */
+			Terror= RWBlock(driveno,(u_int) 0,FALSE,tampon);
+			if(Terror)
 			{
-			Reg_A= (Terror->errnum == DRIVE_EMPTY) ? 0x28 : 0x27;
-			Reg_P|= BITC; Reg_P&= ~BITZ;
-			return;
+				Reg_A= (Terror->errnum == DRIVE_EMPTY) ? 0x28 : 0x27;
+				Reg_P|= BITC; Reg_P&= ~BITZ;
+				return;
 			}
-		Reg_X= 1600 & 0xff; Reg_Y= 1600>>8;
-		break;
-	case 1: /* READ command */
-		block= Lire_Code(0x46)+(Lire_Code(0x47)<<8);
-		Terror= RWBlock(driveno,block,FALSE,tampon);
-		if(Terror)
+			Reg_X= 1600 & 0xff; Reg_Y= 1600>>8;
+			break;
+		case 1: /* READ command */
+			block= Lire_Code(0x46)+(Lire_Code(0x47)<<8);
+			Terror= RWBlock(driveno,block,FALSE,tampon);
+			if(Terror)
 			{
-			Reg_A= (Terror->errnum == DRIVE_EMPTY) ? 0x28 : 0x27;
-			Reg_P|= BITC; Reg_P&= ~BITZ;
-			bbc_tab(0,25);
-			return;
+				Reg_A= (Terror->errnum == DRIVE_EMPTY) ? 0x28 : 0x27;
+				Reg_P|= BITC; Reg_P&= ~BITZ;
+				bbc_tab(0,25);
+				return;
 			}
-		buffadr= Lire_Code(0x44)+(Lire_Code(0x45)<<8);
-		ValidateRead(tampon, buffadr, 512);
-		break;
-	case 2: /* WRITE command */
-		buffadr= Lire_Code(0x44)+(Lire_Code(0x45)<<8);
-		for(p=0; p<512; p++)
-			tampon[p]= Lire_Code(buffadr+p);
-		block= Lire_Code(0x46)+(Lire_Code(0x47)<<8);
-		Terror= RWBlock(driveno,block,TRUE, tampon);
-		if(Terror)
+			buffadr= Lire_Code(0x44)+(Lire_Code(0x45)<<8);
+			ValidateRead(tampon, buffadr, 512);
+			break;
+		case 2: /* WRITE command */
+			buffadr= Lire_Code(0x44)+(Lire_Code(0x45)<<8);
+			for(p=0; p<512; p++)
+				tampon[p]= Lire_Code(buffadr+p);
+			block= Lire_Code(0x46)+(Lire_Code(0x47)<<8);
+			Terror= RWBlock(driveno,block,TRUE, tampon);
+			if(Terror)
 			{
-			Reg_A= 0x27;
-			if(Terror->errnum == DRIVE_EMPTY) Reg_A= 0x28;
-			if(Terror->errnum == WRITE_PROTECT) Reg_A= 0x2b;
-			Reg_P|= BITC; Reg_P&= ~BITZ;
-			return;
+				Reg_A= 0x27;
+				if(Terror->errnum == DRIVE_EMPTY) Reg_A= 0x28;
+				if(Terror->errnum == WRITE_PROTECT) Reg_A= 0x2b;
+				Reg_P|= BITC; Reg_P&= ~BITZ;
+				return;
 			}
 	}
-Reg_A=0; Reg_P&= ~(BITC | BITN); Reg_P|= BITZ;
+	Reg_A=0;
+	Reg_P&= ~(BITC | BITN); Reg_P|= BITZ;
 }
 
 /* SmartPort handler routine */
 void handleSmartPort(void)
 {
-extern u_char ResPil(void);
-u_char i, cmdnum;
-u_char unitnumber, count;
-u_int adparm;
+	extern u_char ResPil(void);
+	u_char i, cmdnum;
+	u_char unitnumber, count;
+	u_int adparm;
 
-i= ResPil(); Reg_PC= (ResPil()<<8)+i;
-Reg_PC++; cmdnum= Lire_Code(Reg_PC);
-Reg_PC++; i= Lire_Code(Reg_PC);
-Reg_PC++; adparm= (Lire_Code(Reg_PC)<<8) + i;
+	i= ResPil(); Reg_PC= (ResPil()<<8)+i;
+	Reg_PC++; cmdnum= Lire_Code(Reg_PC);
+	Reg_PC++; i= Lire_Code(Reg_PC);
+	Reg_PC++; adparm= (Lire_Code(Reg_PC)<<8) + i;
 #ifdef DEBUG
-printf("smrt: cmdnum %d\n",cmdnum);
+	printf("smrt: cmdnum %d\n",cmdnum);
 #endif
-count= Lire_Code(adparm);
-adparm++; unitnumber = Lire_Code(adparm);
-switch(cmdnum)
+	count= Lire_Code(adparm);
+	adparm++; unitnumber = Lire_Code(adparm);
+	switch(cmdnum)
 	{
-	u_int statlist;
-	u_char statcode;
-	case 0: /* STATUS */
-		adparm++; i= Lire_Code(adparm);
-		adparm++; statlist=(Lire_Code(adparm)<<8)+i;
-		adparm++; statcode= Lire_Code(adparm);
-		if(!unitnumber && !statcode)
+		u_int statlist;
+		u_char statcode;
+		case 0: /* STATUS */
+			adparm++; i= Lire_Code(adparm);
+			adparm++; statlist=(Lire_Code(adparm)<<8)+i;
+			adparm++; statcode= Lire_Code(adparm);
+			if(!unitnumber && !statcode)
 			{
-			os_regset mreg;
-			Ecrire_Code(statlist)= os_swix(ADFS_Drives, &mreg) ? 0 : mreg.r[1];
-			statlist++; Ecrire_Code(statlist)= 0xff;
+				os_regset mreg;
+				Ecrire_Code(statlist)= os_swix(ADFS_Drives, &mreg) ? 0 : mreg.r[1];
+				statlist++; Ecrire_Code(statlist)= 0xff;
 			}
 	}
-Reg_A=0; Reg_P&= ~BITC;
+	Reg_A=0; Reg_P&= ~BITC;
 }
 
 BOOL Edisk35(pfb)
 u_char pfb;
 {
-extern u_char ResPil(void);
-u_char i;
-switch(pfb)
+	extern u_char ResPil(void);
+	u_char i;
+	switch(pfb)
 	{
-	case 0x41:
-		handleProDOS();
-		break;
-	case 0x44:
-		handleSmartPort();
-		return(TRUE);
-	default:
-		return(FALSE);
+		case 0x41:
+			handleProDOS();
+			break;
+		case 0x44:
+			handleSmartPort();
+			return(TRUE);
+		default:
+			return(FALSE);
 	}
-i= ResPil(); Reg_PC= (ResPil()<<8)+i;
-return(TRUE);
+	i= ResPil(); Reg_PC= (ResPil()<<8)+i;
+	return(TRUE);
 }
 
 /* Dans le controleur Disk 2 */
 BOOL E206(pfb)
 u_char pfb;
 {
-/* Table de conversion secteur physique DOS 3.3/offset dans le fichier */
-static u_int physconv[16] =
+	/* Table de conversion secteur physique DOS 3.3/offset dans le fichier */
+	static u_int physconv[16] =
 	{
-	(0*2+0)<<8,(4*2+0)<<8,(0*2+1)<<8,(4*2+1)<<8,
-	(1*2+0)<<8,(5*2+0)<<8,(1*2+1)<<8,(5*2+1)<<8,
-	(2*2+0)<<8,(6*2+0)<<8,(2*2+1)<<8,(6*2+1)<<8,
-	(3*2+0)<<8,(7*2+0)<<8,(3*2+1)<<8,(7*2+1)<<8
+		(0*2+0)<<8,(4*2+0)<<8,(0*2+1)<<8,(4*2+1)<<8,
+		(1*2+0)<<8,(5*2+0)<<8,(1*2+1)<<8,(5*2+1)<<8,
+		(2*2+0)<<8,(6*2+0)<<8,(2*2+1)<<8,(6*2+1)<<8,
+		(3*2+0)<<8,(7*2+0)<<8,(3*2+1)<<8,(7*2+1)<<8
 	};
-switch(pfb)
+	switch(pfb)
 	{
-	u_char track;
-	u_int buffadr;
-	case 0:
-		for(track=0; track<NVECT; track++)
-			EmulOp[numvec[track]]= VEmuOp[track];
-		return(FALSE);
-	case 0x3b:
-		Reg_A = Reg_Y = 0;
-		Reg_PC = 0xc64f - 1;
-		return(TRUE);
-	case 0x5c:
-		if(!drive_DOS[0]) return(FALSE);
-		track = AppleCode->bytes[0x41];
-		mfseek(drive_DOS[0],(track<<12) | physconv[AppleCode->bytes[0x3d]],
-			SEEK_SET);
-		buffadr = AppleCode->bytes[0x26]+(AppleCode->bytes[0x27]<<8);
-		track= fread((void *) &(AppleCode->bytes[buffadr]),256,1,
-			drive_DOS[0]);
-		Reg_PC = 0xc6eb - 1;
-		return(TRUE);
+		u_char track;
+		u_int buffadr;
+		case 0:
+			for(track=0; track<NVECT; track++)
+				EmulOp[numvec[track]]= VEmuOp[track];
+			return(FALSE);
+		case 0x3b:
+			Reg_A = Reg_Y = 0;
+			Reg_PC = 0xc64f - 1;
+			return(TRUE);
+		case 0x5c:
+			if(!drive_DOS[0]) return(FALSE);
+			track = AppleCode->bytes[0x41];
+			mfseek(drive_DOS[0],(track<<12) | physconv[AppleCode->bytes[0x3d]], SEEK_SET);
+			buffadr = AppleCode->bytes[0x26]+(AppleCode->bytes[0x27]<<8);
+			track= fread((void *) &(AppleCode->bytes[buffadr]),256,1, drive_DOS[0]);
+			Reg_PC = 0xc6eb - 1;
+			return(TRUE);
 	}
-return(FALSE);
+	return(FALSE);
 }
 
 /* Desactivation des vecteurs de lecture du boot ProDOS */
 BOOL E08(u_char pfb)
 {
-if((pfb== 0xfc) || (pfb== 0xff))
-	EmulOp[0x08]= EmulOp[0x09]= 0;
-return(FALSE);
+	if((pfb== 0xfc) || (pfb== 0xff))
+		EmulOp[0x08]= EmulOp[0x09]= 0;
+	return(FALSE);
 }
 
 BOOL E09(u_char pfb)	/* Lecture d'un bloc ProDOS au boot */
 {
-/* Table de conversion secteur physique/offset dans le fichier */
-static u_int physconv[16] =
+	/* Table de conversion secteur physique/offset dans le fichier */
+	static u_int physconv[16] =
 	{
-	(0*2+0)<<8,(4*2+0)<<8,(0*2+1)<<8,(4*2+1)<<8,
-	(1*2+0)<<8,(5*2+0)<<8,(1*2+1)<<8,(5*2+1)<<8,
-	(2*2+0)<<8,(6*2+0)<<8,(2*2+1)<<8,(6*2+1)<<8,
-	(3*2+0)<<8,(7*2+0)<<8,(3*2+1)<<8,(7*2+1)<<8
+		(0*2+0)<<8,(4*2+0)<<8,(0*2+1)<<8,(4*2+1)<<8,
+		(1*2+0)<<8,(5*2+0)<<8,(1*2+1)<<8,(5*2+1)<<8,
+		(2*2+0)<<8,(6*2+0)<<8,(2*2+1)<<8,(6*2+1)<<8,
+		(3*2+0)<<8,(7*2+0)<<8,(3*2+1)<<8,(7*2+1)<<8
 	};
-switch(pfb)
+	switch(pfb)
 	{
-	u_char track;
-	u_int buffadr;
-	case 0xbc:
-		if(!drive_DOS[0]) return(FALSE);
-		track = AppleCode->bytes[0x41];
-		mfseek(drive_DOS[0],(track<<12) | physconv[AppleCode->bytes[0x3d]],
-			SEEK_SET);
-		buffadr = AppleCode->bytes[0x26]+(AppleCode->bytes[0x27]<<8);
-		track= fread((void *) &(AppleCode->bytes[buffadr]),256,1,
-			drive_DOS[0]);
-		Reg_PC = 0x0a81 - 1;
-		return(TRUE);
+		u_char track;
+		u_int buffadr;
+		case 0xbc:
+			if(!drive_DOS[0]) return(FALSE);
+			track = AppleCode->bytes[0x41];
+			mfseek(drive_DOS[0],(track<<12) | physconv[AppleCode->bytes[0x3d]], SEEK_SET);
+			buffadr = AppleCode->bytes[0x26]+(AppleCode->bytes[0x27]<<8);
+			track= fread((void *) &(AppleCode->bytes[buffadr]),256,1, drive_DOS[0]);
+			Reg_PC = 0x0a81 - 1;
+			return(TRUE);
 	}
-return(FALSE);
+	return(FALSE);
 }
 
 /* ProDOS Disk ][ Device driver */
 BOOL E100(u_char pfb)
 {
-extern u_char ResPil(void);
-u_char command;
-FILE *dD;
+	extern u_char ResPil(void);
+	u_char command;
+	FILE *dD;
 
-if(pfb) return(FALSE);
-if(((AppleCode->bytes[0x43] & 0x7f)!= 0x60) ||
-	!(dD=drive_DOS[(AppleCode->bytes[0x43])>>7]))
+	if(pfb) return(FALSE);
+	if(((AppleCode->bytes[0x43] & 0x7f)!= 0x60) ||
+		!(dD=drive_DOS[(AppleCode->bytes[0x43])>>7]))
 	{
-	Reg_A= 0x28;
-	Reg_P|= BITC;
-	}
-else
-	{
-	switch(command=AppleCode->bytes[0x42])
-	{
-	u_char tampon[512];
-	u_int buffadr, block;
-	case 1: /* READ command */
-	case 2: /* WRITE command */
-	if((block= Lire_Code(0x46)+(Lire_Code(0x47)<<8))>279)
-		{
-		Reg_A= 0x27;
+		Reg_A= 0x28;
 		Reg_P|= BITC;
-		break;
-		}
-	buffadr= Lire_Code(0x44)+(Lire_Code(0x45)<<8);
-	mfseek(dD,block<<9,SEEK_SET);
-	if(command == 1) /* READ */
-		{
-		fread((void *) tampon,512,1,dD);
-		ValidateRead(tampon, buffadr, 512);
-		}
-	else  /* WRITE */
-		{
-		u_int p;
-		for(p=0; p<512; p++)
-			tampon[p]= Lire_Code(buffadr+p);
-		fwrite((void *) tampon,512,1,dD);
-		}
-	case 0: /* STATUS command */
-	case 3: /* FORMAT command */
-		Reg_A=0;
-		Reg_P&= ~BITC;
 	}
+	else
+	{
+		switch(command=AppleCode->bytes[0x42])
+		{
+			u_char tampon[512];
+			u_int buffadr, block;
+			case 1: /* READ command */
+			case 2: /* WRITE command */
+				if((block= Lire_Code(0x46)+(Lire_Code(0x47)<<8))>279)
+				{
+					Reg_A= 0x27;
+					Reg_P|= BITC;
+					break;
+				}
+				buffadr= Lire_Code(0x44)+(Lire_Code(0x45)<<8);
+				mfseek(dD,block<<9,SEEK_SET);
+				if(command == 1) /* READ */
+				{
+					fread((void *) tampon,512,1,dD);
+					ValidateRead(tampon, buffadr, 512);
+				}
+				else  /* WRITE */
+				{
+					u_int p;
+					for(p=0; p<512; p++)
+						tampon[p]= Lire_Code(buffadr+p);
+					fwrite((void *) tampon,512,1,dD);
+				}
+			case 0: /* STATUS command */
+			case 3: /* FORMAT command */
+				Reg_A=0;
+				Reg_P&= ~BITC;
+		}
 	}
-command=ResPil(); Reg_PC=(ResPil()<<8)+command;
-return(TRUE);
+	command=ResPil(); Reg_PC=(ResPil()<<8)+command;
+	return(TRUE);
 }
 
 BOOL (*EmulOp[SIZE_CODE>>8])() =
-	{
+{
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0 */
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 1 */
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 2 */
@@ -798,44 +814,49 @@ BOOL (*EmulOp[SIZE_CODE>>8])() =
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 25 */
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 26 */
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 /* 27 */
-	};
+};
 
 FILE *MyReconDrive(char *sx)
 {
 #define PRODOS 0
 #define DOS33_SLAVE 1
-extern char *filename[2][FNAMELENGTH];
-u_char tampon[3];
-FILE *dD;
-static BOOL (*VectEmOp[2][NVECT])(u_char pfb) =
+	extern char *filename[2][FNAMELENGTH];
+	u_char tampon[3];
+	FILE *dD;
+	static BOOL (*VectEmOp[2][NVECT])(u_char pfb) =
 	{
-	{ E08, E09, 0, E100 },
-	{ 0, 0, Ebd, 0 }
+		{ E08, E09, 0, E100 },
+		{ 0, 0, Ebd, 0 }
 	};
-if(!strcmp(sx,(char *) filename[1]) && drive_DOS[1])
+
+	if(!strcmp(sx,(char *) filename[1]) && drive_DOS[1])
 	{
-	dD= drive_DOS[1];
-	drive_DOS[1]= NULL;
+		dD= drive_DOS[1];
+		drive_DOS[1]= NULL;
 	}
-else	dD= mfopen(sx,"r+b");
-if(dD!= NULL)
+	else
 	{
-	/* Read second block (3 bytes) */
-	mfseek(dD,2<<9,SEEK_SET);
-	fread((void *) tampon,3,1,dD);
-	if(!(tampon[0]|tampon[1]))
+		dD= mfopen(sx,"r+b");
+	}
+
+	if(dD!= NULL)
+	{
+		/* Read second block (3 bytes) */
+		mfseek(dD,2<<9,SEEK_SET);
+		fread((void *) tampon,3,1,dD);
+		if(!(tampon[0]|tampon[1]))
 		{
-		/* On ferme l'ancien fichier */
-		if(drive_DOS[0]) fclose(drive_DOS[0]);
-		drive_DOS[0]= dD;
-		memcpy(VEmuOp, VectEmOp[tampon[2] ? PRODOS : DOS33_SLAVE],
-			sizeof(VEmuOp));
-		strcpy((char *) filename[0], sx);
+			/* On ferme l'ancien fichier */
+			if(drive_DOS[0]) fclose(drive_DOS[0]);
+			drive_DOS[0]= dD;
+			memcpy(VEmuOp, VectEmOp[tampon[2] ? PRODOS : DOS33_SLAVE], sizeof(VEmuOp));
+			strcpy((char *) filename[0], sx);
 		}
-	else	{
-		fclose(dD); dD=NULL;
-		puts("Unknown OS");
+		else
+		{
+			fclose(dD); dD=NULL;
+			puts("Unknown OS");
 		}
 	}
-return(dD);
+	return(dD);
 }

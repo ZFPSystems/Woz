@@ -42,7 +42,6 @@ SPlot.o:     SPlot.s
  objasm $(CCFlags) -FROM s.SPlot -TO o.SPlot -S -Q -C
 
 # Dynamic dependencies:
-o.SPlot: s.SPlot
 o.Simulator:	c.Simulator
 o.Simulator:	C:h.kernel
 o.Simulator:	RISCOSLib:h.bbc
@@ -73,3 +72,4 @@ o.Sprite:	RISCOSLib:h.sprite
 o.Sprite:	RISCOSLib:h.os
 o.Sprite:	C:h.kernel
 o.Sprite:	h.general
+o.SPlot: s.SPlot
