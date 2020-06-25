@@ -62,7 +62,7 @@ FILE *drive_DOS[2] =
 
 char *filename[2][FNAMELENGTH] =
 	{
-	"<Woz$Dir>.Floppy1",
+	"<Woz$Dir>.^.Boot.Floppy1",
 	""
 	};
 
@@ -102,10 +102,8 @@ u_int offwrite[256];
 
 extern u_int (*ModAd[])();
 extern u_int RechAdr(void), Adr(u_int ax);
-
 extern BOOL (*EmulOp[SIZE_CODE>>8])(u_char pfx);
 extern BOOL (*EmuWrite[SIZE_CODE>>8])(u_int ax, u_char vx);
-
 extern void (*ModOp[])();
 
 /* Redefinition d'un caractere du jeu ISO */
@@ -120,550 +118,526 @@ for(j=0; j<9; j++) bbc_vdu(buf[j]);
    de l'Apple */
 FILE *MyReconDrive2(char *sx)
 {
-	FILE *dD;
-	if(!strcmp(sx,(char *) filename[0]) && drive_DOS[0])
+FILE *dD;
+if(!strcmp(sx,(char *) filename[0]) && drive_DOS[0])
 	{
-		dD= drive_DOS[1]= drive_DOS[0];
-		drive_DOS[0]= NULL;
-		strcpy((char *) filename[1], sx);
+	dD= drive_DOS[1]= drive_DOS[0];
+	drive_DOS[0]= NULL;
+	strcpy((char *) filename[1], sx);
 	}
-	else
-		if((dD=fopen(sx,"r+b"))!= NULL)
+else
+	if((dD=fopen(sx,"r+b"))!= NULL)
 		{
-			if(drive_DOS[1]) fclose(drive_DOS[1]);
-			drive_DOS[1]= dD;
-			strcpy((char *) filename[1], sx);
+		if(drive_DOS[1]) fclose(drive_DOS[1]);
+		drive_DOS[1]= dD;
+		strcpy((char *) filename[1], sx);
 		}
-	return(dD);
+return(dD);
 }
 
 /* Introduction du nom d'un nouveau disque */
 void AutreDisque(void)
 {
-	extern void sprite_rloc(void);
-	extern void PtoText(void);
-	extern void PtoSprite(void);
-	extern void Fantasia(void);
-	extern void Retour(void);
+extern void sprite_rloc(void);
+extern void PtoText(void);
+extern void PtoSprite(void);
+extern void Fantasia(void);
+extern void Retour(void);
 #ifdef RAMSLOT
-	extern BOOL Edeb(u_char pfb);
-	extern BOOL (*EmulOp[SIZE_CODE>>8])(u_char pfb);
+extern BOOL Edeb(u_char pfb);
+extern BOOL (*EmulOp[SIZE_CODE>>8])(u_char pfb);
 #endif
 #define MODE_TEXT 0
 #define MODE_SPRITE 1
-	static u_char TextSprite = MODE_TEXT;
+static u_char TextSprite = MODE_TEXT;
 
-	u_char ip;
-	char nomfic[12];
-	char fichier[32] = "<Woz$Dir>.";
-	Fantasia();
-	bbc_cursor(1);
-	printf("> Command/pathname: ");
-	if (gets(nomfic))
+u_char ip;
+char nomfic[12];
+char fichier[32] = "<Woz$Dir>.^.Boot.";
+Fantasia(); bbc_cursor(1);
+printf("> Command/pathname: ");
+if (gets(nomfic))
 	{
-		switch(*nomfic)
+	switch(*nomfic)
 		{
-			case '0':
-					mode_local= (mode_local == LOCAL ? US : LOCAL);
-					for(ip=0; ip<nbr_local; ip++)
-						RedefISO(localcharcode[mode_local][ip]);
-					sprite_rloc();
-					(*RafEcr48)();
-					break;
-			case '2':
-					if( !MyReconDrive2(
-						strcat(fichier,nomfic+1)
-						) )
-					{
-						bbc_tab(0,26); printf("Something went wrong!");
-						getchar();
-					}
-					break;
-			case '3':
-					TextSprite= (TextSprite == MODE_TEXT ? MODE_SPRITE : MODE_TEXT);
-					if(TextSprite == MODE_TEXT)
-						PtoText();
-					else
-						PtoSprite();
-						(*RafEcr48)();
-					break;
+		case '0':
+			mode_local= (mode_local == LOCAL ? US : LOCAL);
+			for(ip=0; ip<nbr_local; ip++)
+				RedefISO(localcharcode[mode_local][ip]);
+			sprite_rloc();
+			(*RafEcr48)();
+			break;
+		case '2':
+			if(!MyReconDrive2(
+				strcat(fichier,nomfic+1)
+				))
+				{
+				bbc_tab(0,26); printf("Something went wrong!");
+				getchar();
+				}
+			break;
+		case '3':
+			TextSprite= (TextSprite == MODE_TEXT ? MODE_SPRITE : MODE_TEXT);
+			if(TextSprite == MODE_TEXT)
+				PtoText();
+			else
+				PtoSprite();
+			(*RafEcr48)();
+			break;
 #ifdef RAMSLOT
-			case '4':
-					bbc_tab(0,24); printf("Emu %p, Edeb %p ",
-					EmulOp[0x200+(RAMSLOT<<3)], Edeb);
-					break;
+		case '4':
+			bbc_tab(0,24); printf("Emu %p, Edeb %p ",
+				EmulOp[0x200+(RAMSLOT<<3)], Edeb);
+			break;
 #endif
-			default:
-					if( !MyReconDrive(
-						strcat(fichier,(*nomfic =='1' ? nomfic+1 : nomfic))
-						) )
-					{
-						bbc_tab(0,26); printf("Something went wrong!");
-						getchar();
-					}
-			}
+		default:
+			if(!MyReconDrive(
+				strcat(fichier,(*nomfic =='1' ? nomfic+1 : nomfic))
+				))
+				{
+				bbc_tab(0,26); printf("Something went wrong!");
+				getchar();
+				}
+		}
 	}
-	Retour();
+Retour();
 }
 
 u_char ReadKbd(pvalue)
 u_char *pvalue;
 {
-	int p;
-	u_char p1;
-	while((p1=((p=_kernel_osbyte(129,0,0))>>8) & 0xff) != 0xff)
-		if(p1 == 0x1b)
-			/* Escape condition: appel au handler */
-			_kernel_osbyte(126,0,0);
-		else	/*	Right arrow: code 0x95 et non pas 0x89
-		   			Backspace key = 8 --> 0xff */
-			*pvalue = (u_char) (p==0x89 ? 0x95 : ((p == 8 ? 0xff : p) & 0xff) |
-								0x80);
-	if((_kernel_osbyte(129,113 ^ 0xff,0xff)>>8) & 0xff)
-		AutreDisque();
-	return(*pvalue);
+int p;
+u_char p1;
+while((p1=((p=_kernel_osbyte(129,0,0))>>8) & 0xff) != 0xff)
+	if(p1 == 0x1b)
+		/* Escape condition: appel au handler */
+		_kernel_osbyte(126,0,0);
+	else	/* Right arrow: code 0x95 et non pas 0x89
+		   Backspace key = 8 --> 0xff */
+		*pvalue = (u_char) (p==0x89 ? 0x95 : ((p == 8 ? 0xff : p) & 0xff) |
+					0x80);
+if((_kernel_osbyte(129,113 ^ 0xff,0xff)>>8) & 0xff)
+	AutreDisque();
+return(*pvalue);
 }
 
 void RegleLCSW(u_char a)
 {
-	u_int a3, offsetrd, offsetrdD, offsetwr, offsetwrD;
+u_int a3, offsetrd, offsetrdD, offsetwr, offsetwrD;
 
-	/* Reglement du cas WrLCRAM */
-	WrLCRAM = (a & 1) ? TRUE : FALSE;
-	for(a3=0x100; a3<0x140; a3++)
-		allowwrite[a3]=allowwrite[a3+(OFFBANK>>8)]= WrLCRAM;
+/* Reglement du cas WrLCRAM */
+WrLCRAM = (a & 1) ? TRUE : FALSE;
+for(a3=0x100; a3<0x140; a3++)
+	allowwrite[a3]=allowwrite[a3+(OFFBANK>>8)]= WrLCRAM;
 
-	/* Reglement du cas RdLCRAM */
-	offsetwr = offsetwrD = WrLCRAM ? 0x3000 : 0;
-	offsetrd = offsetrdD = 0;
-	if((a == 0) || (a == 3) || (a == 8) || (a == 11))
+/* Reglement du cas RdLCRAM */
+offsetwr = offsetwrD = WrLCRAM ? 0x3000 : 0;
+offsetrd = offsetrdD = 0;
+if((a == 0) || (a == 3) || (a == 8) || (a == 11))
 	{
-		RdLCRAM= TRUE;
-		offsetrd += 0x3000 + (RdAltZP ? OFFBANK : 0);
-		offsetrdD += 0x3000 + (RdAltZP ? OFFBANK : 0);
+	RdLCRAM= TRUE;
+	offsetrd += 0x3000 + (RdAltZP ? OFFBANK : 0);
+	offsetrdD += 0x3000 + (RdAltZP ? OFFBANK : 0);
 	}
-	else
-		RdLCRAM= FALSE;
-
-	/* Reglement du cas RdBNK2 */
-	if(a < 8)
+else
+	RdLCRAM= FALSE;
+/* Reglement du cas RdBNK2 */
+if(a < 8)
 	{
-		RdBNK2= TRUE;
-		if(RdLCRAM) offsetrdD += 0x3000;
-		if(WrLCRAM) offsetwrD += 0x3000;
+	RdBNK2= TRUE;
+	if(RdLCRAM) offsetrdD += 0x3000;
+	if(WrLCRAM) offsetwrD += 0x3000;
 	}
-	else
-		RdBNK2= FALSE;
-
-	if(WrLCRAM && RdAltZP)
+else
+	RdBNK2= FALSE;
+if(WrLCRAM && RdAltZP)
 	{
-		offsetwr+= OFFBANK;
-		offsetwrD+= OFFBANK;
+	offsetwr+= OFFBANK;
+	offsetwrD+= OFFBANK;
 	}
-	for(a3=0xe0; a3<0x100; a3++)
+for(a3=0xe0; a3<0x100; a3++)
 	{
-		offread[a3]= offsetrd;
-		offwrite[a3]= offsetwr;
+	offread[a3]= offsetrd;
+	offwrite[a3]= offsetwr;
 	}
-	for(a3=0xd0; a3<0xe0; a3++)
+for(a3=0xd0; a3<0xe0; a3++)
 	{
-		offread[a3]= offsetrdD;
-		offwrite[a3]= offsetwrD;
+	offread[a3]= offsetrdD;
+	offwrite[a3]= offsetwrD;
 	}
 }
 
 void French_bbc_mode(u_char mode)
 {
-	extern u_char oldcol0, oldcol1;
-	extern u_char scale_x;
-	extern sprite_pixtrans mpixtrans[2];
-	u_char icol;
+extern u_char oldcol0, oldcol1;
+extern u_char scale_x;
+extern sprite_pixtrans mpixtrans[2];
+u_char icol;
 
-	bbc_mode(mode);
-	bbc_cursor(0);
-	for(icol=0; icol<nbrcol; icol++)
+bbc_mode(mode);
+bbc_cursor(0);
+for(icol=0; icol<nbrcol; icol++)
 	{
-		u_char j;
-		for(j=0; j<6; j++) bbc_vdu(MaPalette[icol][j]);
+	u_char j;
+	for(j=0; j<6; j++) bbc_vdu(MaPalette[icol][j]);
 	}
-	scale_x= (mode == MODE_APPLE ? 2 : 1);
-	mpixtrans[1]= oldcol0= 7;
-	mpixtrans[0]= (oldcol1= 128) & 0x7f;
+scale_x= (mode == MODE_APPLE ? 2 : 1);
+mpixtrans[1]= oldcol0= 7;
+mpixtrans[0]= (oldcol1= 128) & 0x7f;
 }
 
 void Areset(int px)
 {
-	extern void SRdAltZPFalse(void), SRd80storeFalse(void);
-	extern void SRdRAMRdFalse(void), SRdRAMWrtFalse(void);
-	extern void SRdCxROMFalse(void);
-	extern FILE *mdD;
-	u_int p;
+extern void SRdAltZPFalse(void), SRd80storeFalse(void);
+extern void SRdRAMRdFalse(void), SRdRAMWrtFalse(void);
+extern void SRdCxROMFalse(void);
+extern FILE *mdD;
+u_int p;
 
-	/* Teste si la touche ESC ou Break est enfoncee */
-	p=_kernel_osbyte(122,0,0);
-	switch(p)
+/* Teste si la touche ESC ou Break est enfoncee */
+p=_kernel_osbyte(122,0,0);
+switch(p)
 	{
-		case 112: /* Code interne de Esc */
-				Vkbd = 155; /* ASCII negatif de Esc */
-				signal(SIGINT,Areset);
-				return;
-		case 44: /* Code interne Break */
-				 /* Touche Shift pressee? */
-				if(_kernel_osbyte(121,0 ^ 0x80,0))
-				{
-					/* Si session terminee en cours de transfert
-			   		   Apple <-> Archimedes */
-					if (mdD) fclose(mdD);
+	case 112: /* Code interne de Esc */
+		Vkbd = 155; /* ASCII negatif de Esc */
+		signal(SIGINT,Areset);
+		return;
+	case 44: /* Code interne Break */
+		/* Touche Shift pressee? */
+		if(_kernel_osbyte(121,0 ^ 0x80,0))
+			{
+			/* Si session terminee en cours de transfert
+			   Apple <-> Archimedes */
+			if (mdD) fclose(mdD);
 #ifdef RAMSLOT
-					if (Ramfile) fclose(Ramfile);
+			if (Ramfile) fclose(Ramfile);
 #endif
-					/* Ferme le fichier "drive_DOS" */
-					if (drive_DOS[0]) fclose(drive_DOS[0]);
-					if (drive_DOS[1]) fclose(drive_DOS[1]);
-					/* Libere l'espace des sprites */
-					if(home_area != NULL) free(home_area);
-					/* Libere l'espace memoire */
-					free(AppleCode);
-					/* Acknowledge escape condition */
-					_kernel_osbyte(126,0,0);
-					/* Restaure l'edition au clavier */
-					_kernel_osbyte(4,oldedit,0);
-					putchar('\n'); /* Instruction TRES importante. Don't remove */
-					/* et l'effet de la touche Break */
-					_kernel_osbyte(247,oldbreak,0);
-					/* Redefinit les caracteres initiaux */
-					{
-						u_int i;
-						for(i=0; i<NOMBRE_CHARS_REDEF; i++)
-							RedefISO(oldcharcode[i]);
-						if(mode_local== LOCAL)
-							for(i=0; i<nbr_local; i++)
-								RedefISO(localcharcode[US][i]);
-					}
-					/* Couleurs archimediennes reapparaissez */
-					bbc_vdu(bbc_RestoreLogical);
-					/* Et notre curseur Archimedien reapparait */
-					bbc_cursor(1);
-					/* Textes et background en normal */
-					bbc_colour(7);
-					bbc_colour(128);
-					raise(SIGINT); /* Touche pressee: Reset Archimedes */
-				}
-				else
-				{
-					/* Touche Shift relachee: Reset Apple */
-					/* On effectue ici toutes les initialisations
-			   		   de softswitches faites par le materiel */
-					if(RdCxROM) SRdCxROMFalse();
-					offread[0xc3]= 0; RdC3ROM= FALSE;
-					if(RdAltZP) SRdAltZPFalse();
-					if(Rd80store) SRd80storeFalse();
-					if(RdRAMRd) SRdRAMRdFalse();
-					if(RdRAMWrt) SRdRAMWrtFalse();
-					/* Read ROM, write RAM, use bank2 */
-					RegleLCSW(1);
-					longjmp(myresetpoint,0);
-				}
+			/* Ferme le fichier "drive_DOS" */
+			if (drive_DOS[0]) fclose(drive_DOS[0]);
+			if (drive_DOS[1]) fclose(drive_DOS[1]);
+			/* Libere l'espace des sprites */
+			if(home_area != NULL) free(home_area);
+			/* Libere l'espace memoire */
+			free(AppleCode);
+			/* Acknowledge escape condition */
+			_kernel_osbyte(126,0,0);
+			/* Restaure l'edition au clavier */
+			_kernel_osbyte(4,oldedit,0);
+			putchar('\n'); /* Instruction TRES importante. Don't remove */
+			/* et l'effet de la touche Break */
+			_kernel_osbyte(247,oldbreak,0);
+			/* Redefinit les caracteres initiaux */
+			{
+			u_int i;
+			for(i=0; i<NOMBRE_CHARS_REDEF; i++)
+				RedefISO(oldcharcode[i]);
+			if(mode_local== LOCAL)
+				for(i=0; i<nbr_local; i++)
+					RedefISO(localcharcode[US][i]);
+			}
+			/* Couleurs archimediennes reapparaissez */
+			bbc_vdu(bbc_RestoreLogical);
+			/* Et notre curseur Archimedien reapparait */
+			bbc_cursor(1);
+			/* Textes et background en normal */
+			bbc_colour(7);
+			bbc_colour(128);
+			raise(SIGINT); /* Touche pressee: Reset Archimedes */
+			}
+		else
+			{
+			/* Touche Shift relachee: Reset Apple */
+			/* On effectue ici toutes les initialisations
+			   de softswitches faites par le materiel */
+			if(RdCxROM) SRdCxROMFalse();
+			offread[0xc3]= 0; RdC3ROM= FALSE;
+			if(RdAltZP) SRdAltZPFalse();
+			if(Rd80store) SRd80storeFalse();
+			if(RdRAMRd) SRdRAMRdFalse();
+			if(RdRAMWrt) SRdRAMWrtFalse();
+			/* Read ROM, write RAM, use bank2 */
+			RegleLCSW(1);
+			longjmp(myresetpoint,0);
+			}
 	}
 }
 
 int main()
 {
-	extern void SRdCxROMFalse(void);
-	char code;
-	FILE *dummy;
-	extern u_char (*current_textcs)(u_char vx);
-	extern u_char (*vprimarycs)(u_char vx);
-	extern BOOL EmuWc0(u_int ad, u_char vx);
-	extern BOOL (*UpdScreen40)(u_int ad, u_char vx);
-	extern void (*RafEcrAC40)(void);
-	extern void SRdHiresFalse(void), SRdTextTrue(void);
-	extern char sprite_init(void);
-	extern void Fetch(void);
-	static char buffer[10];
+extern void SRdCxROMFalse(void);
+char code;
+FILE *dummy;
+extern u_char (*current_textcs)(u_char vx);
+extern u_char (*vprimarycs)(u_char vx);
+extern BOOL EmuWc0(u_int ad, u_char vx);
+extern BOOL (*UpdScreen40)(u_int ad, u_char vx);
+extern void (*RafEcrAC40)(void);
+extern void SRdHiresFalse(void), SRdTextTrue(void);
+extern char sprite_init(void);
+extern void Fetch(void);
+static char buffer[10];
 #ifdef CLOCKSLOT
-	extern BOOL Eclock(u_char pfbx);
+extern BOOL Eclock(u_char pfbx);
 #endif
 #ifdef UNISLOT
-	extern BOOL Edisk35(u_char pfbx);
+extern BOOL Edisk35(u_char pfbx);
 #endif
 #ifdef RAMSLOT
-	extern BOOL Es4c9(u_char pfbx);
-	extern BOOL Es4ca(u_char pfbx);
-	static os_regset mreg;
-	extern BOOL Edeb(u_char pfbx);
+extern BOOL Es4c9(u_char pfbx);
+extern BOOL Es4ca(u_char pfbx);
+static os_regset mreg;
+extern BOOL Edeb(u_char pfbx);
 #endif
-	extern BOOL EmuWCF(u_int ax, u_char vx);
+extern BOOL EmuWCF(u_int ax, u_char vx);
 
 #ifdef	 DEBUG
-	u_int RP1; BOOL Trace;
+u_int RP1; BOOL Trace;
 #endif
 
 
-	/* Reservation de la memoire Apple */
-	if((AppleCode = (EightBitCode *) malloc(sizeof(EightBitCode))) == NULL)
+/* Reservation de la memoire Apple */
+if((AppleCode = (EightBitCode *) malloc(sizeof(EightBitCode))) == NULL)
 	{
-		puts("Memory allocation error, please check if you have enough free memory for !Woz. It requires at least 288KB of free memory");
-		exit(0);
+	puts("Memory allocation error");
+	exit(0);
 	}
 
-	/* Chargement du fichier ROM2E en memoire */
-	if((dummy=fopen("<Woz$Dir>.^.Boot.ROM2E", "rb")) == NULL)
+/* Chargement du fichier ROM2E en memoire */
+if((dummy=fopen("<Woz$Dir>.^.Boot.ROM2E", "rb")) == NULL)
 	{
-		puts("Error opening ROM2E");
-		exit(1);
+	puts("Error opening ROM2E");
+	exit(1);
 	}
-	puts("ROM2E successfully opened");
+puts("ROM2E successfully opened");
 
-	memset(AppleCode,0,sizeof(EightBitCode)); /* tout a zero */
-	if( fread((void *) ((char *) AppleCode + 0xc100),0x3f00,1,
-		dummy) != 1 )
+memset(AppleCode,0,sizeof(EightBitCode)); /* tout a zero */
+if(fread((void *) ((char *) AppleCode + 0xc100),0x3f00,1,
+	dummy) != 1)
 	{
-		puts("Error while reading ROM2E");
-		exit(2);
+	puts("Error while reading ROM2E");
+	exit(2);
 	}
-	fclose(dummy);
-	puts("ROM2E successfully read");
+fclose(dummy);
+puts("ROM2E successfully read");
 
-	/* Chargement de la ROM controleur (direction slot 6) */
-	if((dummy=fopen("<Woz$Dir>.D2CONTROL", "rb")) == NULL)
+/* Chargement de la ROM controleur (direction slot 6) */
+if((dummy=fopen("<Woz$Dir>.D2CONTROL", "rb")) == NULL)
 	{
-		puts("Error opening D2CONTROL");
-		exit(3);
+	puts("Error opening D2CONTROL");
+	exit(3);
 	}
-	puts("D2CONTROL sucessfully opened");
-	if( fread((void *) ((char *) AppleCode + 0xc600 + OFFBANK), 0x100,1,
-		dummy) != 1 )
+puts("D2CONTROL sucessfully opened");
+if(fread((void *) ((char *) AppleCode + 0xc600 + OFFBANK), 0x100,1,
+	dummy) != 1)
 	{
-		puts("Error while reading D2CONTROL");
-		exit(4);
+	puts("Error while reading D2CONTROL");
+	exit(4);
 	}
-	fclose(dummy);
-	puts("D2CONTROL successfully read");
+fclose(dummy);
+puts("D2CONTROL successfully read");
 
-	/* Caracteres locaux - are you there? */
-	if((dummy=fopen("<Woz$Dir>.Local", "rb")) == NULL)
-	{
-		 puts("Local textfile not found");
-	}
-	else
-	{
-		while(fread((void *) buffer, 2, 1, dummy) == 1)
+/* Caracteres locaux - are you there? */
+if((dummy=fopen("<Woz$Dir>.Local", "rb")) == NULL)
+	puts("Local textfile not found");
+else	{
+	while(fread((void *) buffer, 2, 1, dummy) == 1)
 		{
-			localcharcode[US][nbr_local][0] = buffer[0];
-			os_word(10, (void *) localcharcode[US][nbr_local]);
-			local_def[nbr_local] =  localcharcode[LOCAL][nbr_local][0] =
-									buffer[1];
-			os_word(10, (void *) localcharcode[LOCAL][nbr_local]);
-			localcharcode[LOCAL][nbr_local++][0] = buffer[0];
+		localcharcode[US][nbr_local][0] = buffer[0];
+		os_word(10, (void *) localcharcode[US][nbr_local]);
+		local_def[nbr_local] = localcharcode[LOCAL][nbr_local][0] =
+			buffer[1];
+		os_word(10, (void *) localcharcode[LOCAL][nbr_local]);
+		localcharcode[LOCAL][nbr_local++][0] = buffer[0];
 		}
-		if((!feof(dummy)) || nbr_local > NOMBRE_CHARS_LOCAL)
+	if((!feof(dummy)) || nbr_local > NOMBRE_CHARS_LOCAL)
 		{
-			puts("Error reading Local");
-			fclose(dummy);
-			exit(5);
+		puts("Error reading Local");
+		fclose(dummy);
+		exit(5);
 		}
-		fclose(dummy);
-		puts("Local sucessfully read");
-	}
-
-	/* Definition des nouveaux caracteres MouseText */
-	if((dummy=fopen("<Woz$Dir>.MouseFont", "rb")) == NULL)
-	{
-		puts("Error opening MouseFont");
-		exit(5);
-	}
-	code = 0;
-	while(fread((void *) buffer, 10, 1, dummy) == 1)
-	{
-		u_char i;
-		oldcharcode[code][0] = buffer[1];
-		os_word(10, (void *) oldcharcode[code++]);
-		for(i=0; i<10; i++) bbc_vdu(buffer[i]);
-	}
-	if((!feof(dummy)) || code != NOMBRE_CHARS_REDEF)
-	{
-		puts("Error while reading MouseFont");
-		fclose(dummy);
-		exit(5);
-	}
 	fclose(dummy);
-	puts("MouseFont successfully read");
-
-	/* Init des sprites */
-	if((home_area= (sprite_area *) malloc(SIZE_SPRITE)) == NULL)
-	{
-		puts("No space for private sprite area");
-		exit(5);
+	puts("Local sucessfully read");
 	}
 
-	sprite_area_initialise(home_area, SIZE_SPRITE);
-
-	(void) sprite_area_load(home_area, "<Woz$Dir>.AppleSprit");
-
-	if((code=sprite_init())!= NULL)
+/* Definition des nouveaux caracteres MouseText */
+if((dummy=fopen("<Woz$Dir>.MouseFont", "rb")) == NULL)
 	{
-		printf("Erreur initializing sprite area: %d\n",code);
-		exit(5);
+	puts("Error opening MouseFont");
+	exit(5);
 	}
-
-	/* Lecture de la palette Apple */
-	if((dummy=fopen("<Woz$Dir>.APalette", "rb")) == NULL)
+code = 0;
+while(fread((void *) buffer, 10, 1, dummy) == 1)
 	{
-		puts("Error opening APalette");
-		exit(5);
+	u_char i;
+	oldcharcode[code][0] = buffer[1];
+	os_word(10, (void *) oldcharcode[code++]);
+	for(i=0; i<10; i++) bbc_vdu(buffer[i]);
 	}
-	nbrcol= 0;
-	while(fread((void *) MaPalette[nbrcol], 6, 1, dummy) ==1) nbrcol++;
-	if(!feof(dummy))
+if((!feof(dummy)) || code != NOMBRE_CHARS_REDEF)
 	{
-		puts("Error while reading APalette");
-		fclose(dummy);
-		exit(5);
-	}
+	puts("Error while reading MouseFont");
 	fclose(dummy);
-	puts("APalette successfully read");
-
-	/*  Ouverture du fichier "floppy" et
-   		et reconnaissance de l'OS (DOS 3.3/ProDOS) */
-	if(MyReconDrive("<Woz$Dir>.^.Boot.Floppy1") == NULL)
-	{
-		puts("Error opening Floppy1");
-		exit(6);
+	exit(5);
 	}
-	if(!MyReconDrive2("<Woz$Dir>.^.Boot.Floppy2") == NULL)
-		puts("Floppy2 disk file probably not there");
+fclose(dummy);
+puts("MouseFont successfully read");
+
+/* Init des sprites */
+if((home_area= (sprite_area *) malloc(SIZE_SPRITE)) == NULL)
+	{
+	puts("No space for private sprite area");
+	exit(5);
+	}
+
+sprite_area_initialise(home_area, SIZE_SPRITE);
+
+(void) sprite_area_load(home_area, "<Woz$Dir>.AppleSprit");
+
+if((code=sprite_init())!= NULL)
+	{
+	printf("Error initialising sprite area: %d\n",code);
+	exit(5);
+	}
+
+/* Lecture de la palette Apple */
+if((dummy=fopen("<Woz$Dir>.APalette", "rb")) == NULL)
+	{
+	puts("Error opening APalette");
+	exit(5);
+	}
+nbrcol= 0;
+while(fread((void *) MaPalette[nbrcol], 6, 1, dummy) ==1) nbrcol++;
+if(!feof(dummy))
+	{
+	puts("Error while reading APalette");
+	fclose(dummy);
+	exit(5);
+	}
+fclose(dummy);
+puts("APalette successfully read");
+
+/* Ouverture du fichier "floppy" et
+   et reconnaissance de l'OS (DOS 3.3/ProDOS) */
+if(MyReconDrive("<Woz$Dir>.^.Boot.Floppy1") == NULL)
+	{
+	puts("Error opening Floppy1");
+	exit(6);
+	}
+if(!MyReconDrive2("<Woz$Dir>.^.Boot.Floppy2") == NULL)
+	puts("Floppy2 disk file probably not there");
 
 #ifdef	DEBUG
-	printf("PC: "); scanf("%4X",&RP1); getchar();
-	Trace=FALSE;
+printf("PC: "); scanf("%4X",&RP1); getchar();
+Trace=FALSE;
 #endif
 
-	/* Initialisation des tableaux d'offset */
-	memset(offwrite,0,sizeof(offwrite));
-	/* Reglage de la carte Langage */
-	for(a3=0xe0; a3<0x100; a3++)
-		offwrite[a3]= 0x3000;
-	for(a3=0xd0; a3<0xe0; a3++)
-		offwrite[a3]= 0x6000;
-	memset(offread,0,sizeof(offread));
+/* Initialisation des tableaux d'offset */
+memset(offwrite,0,sizeof(offwrite));
+/* Reglage de la carte Langage */
+for(a3=0xe0; a3<0x100; a3++)
+	offwrite[a3]= 0x3000;
+for(a3=0xd0; a3<0xe0; a3++)
+	offwrite[a3]= 0x6000;
+memset(offread,0,sizeof(offread));
 #ifdef CLOCKSLOT
-	/* Configuration pour la carte horloge */
-	AppleCode->bytes[0xc000+OFFBANK+(CLOCKSLOT<<8)] = 0x08;
-	AppleCode->bytes[0xc002+OFFBANK+(CLOCKSLOT<<8)] = 0x28;
-	AppleCode->bytes[0xc004+OFFBANK+(CLOCKSLOT<<8)] = 0x58;
-	AppleCode->bytes[0xc006+OFFBANK+(CLOCKSLOT<<8)] = 0x70;
-	EmulOp[0x200+CLOCKSLOT]= Eclock;
+/* Configuration pour la carte horloge */
+AppleCode->bytes[0xc000+OFFBANK+(CLOCKSLOT<<8)] = 0x08;
+AppleCode->bytes[0xc002+OFFBANK+(CLOCKSLOT<<8)] = 0x28;
+AppleCode->bytes[0xc004+OFFBANK+(CLOCKSLOT<<8)] = 0x58;
+AppleCode->bytes[0xc006+OFFBANK+(CLOCKSLOT<<8)] = 0x70;
+EmulOp[0x200+CLOCKSLOT]= Eclock;
 #endif
 #ifdef UNISLOT
-	/* Chargement de la ROM controleur Unidisk (direction slot 5) */
-	if((dummy=fopen("<Woz$Dir>.F5", "rb")) != NULL)
+/* Chargement de la ROM controleur Unidisk (direction slot 5) */
+if((dummy=fopen("<Woz$Dir>.F5", "rb")) != NULL)
 	{
-		puts("F5 successfully opened");
-		if( fread((void *) ((char *) AppleCode + 0xc000+OFFBANK+(UNISLOT<<8)),
-			0x100,1,dummy) != 1 )
-		{
-			 puts("Error while reading F5");
-		}
-		else
-		{
-			 puts("F5 reading OK");
-		}
-		fclose(dummy);
+	puts("F5 successfully opened");
+	if(fread((void *) ((char *) AppleCode + 0xc000+OFFBANK+(UNISLOT<<8)),
+		0x100,1,dummy) != 1)
+		puts("Error while reading F5");
+	else	puts("F5 reading OK");
+	fclose(dummy);
 	}
-	else
-	{
-		puts("Error opening F5");
+else	{
+	puts("Error opening F5");
 	}
-
-	/* Configuration pour le smartport Unidisk 3'5 */
-	EmulOp[0x200+UNISLOT]= Edisk35;
+/* Configuration pour le smartport Unidisk 3'5 */
+EmulOp[0x200+UNISLOT]= Edisk35;
 #endif
 #ifdef RAMSLOT
-	(void) remove("ram:$.daSa");
-	mreg.r[0]= (int) "0";
-	if(!os_swix(RAMFS_FreeSpace,&mreg))
+(void) remove("ram:$.daSa");
+mreg.r[0]= (int) "0";
+if(!os_swix(RAMFS_FreeSpace,&mreg))
 	{
-		if((dummy=fopen("<Woz$Dir>.F48","rb")) != NULL)
+	if((dummy=fopen("<Woz$Dir>.F48","rb")) != NULL)
 		{
-			puts("F48 sucessfully opened");
-			if( fread((void *) ((char *) AppleCode + 0xc000+OFFBANK+(RAMSLOT<<8)),
-				0x100,1,dummy) == 1)
+		puts("F48 sucessfully opened");
+		if(fread((void *) ((char *) AppleCode + 0xc000+OFFBANK+(RAMSLOT<<8)),
+			0x100,1,dummy) == 1)
 			{
-				if( fread((void *) ((char *) AppleCode +0xc000+OFFBANK+(RAMSLOT<<11)),
-					0x800,1,dummy) == 1)
+			if(fread((void *) ((char *) AppleCode +0xc000+OFFBANK+(RAMSLOT<<11)),
+				0x800,1,dummy) == 1)
 				{
-					puts("F48 reading OK");
-					Ramfile= fopen("ram:$.daSa","w+b");
-					ramsize= mreg.r[1]>>16;
-					EmulOp[0x200+(RAMSLOT<<3)+0xc9-0xc8]= Es4c9;
-					EmulOp[0x200+(RAMSLOT<<3)+0xca-0xc8]= Es4ca;
-					EmulOp[0x200+(RAMSLOT<<3)]= Edeb;
+				puts("F48 reading OK");
+				Ramfile= fopen("ram:$.daSa","w+b");
+				ramsize= mreg.r[1]>>16;
+				EmulOp[0x200+(RAMSLOT<<3)+0xc9-0xc8]= Es4c9;
+				EmulOp[0x200+(RAMSLOT<<3)+0xca-0xc8]= Es4ca;
+				EmulOp[0x200+(RAMSLOT<<3)]= Edeb;
 				}
-				else
-				{
-					 puts("Error while reading F48");
-				}
+			else	puts("Error while reading F48");
 			}
-			else
-			{
-				 puts("Error while reading F48");
-			}
-			fclose(dummy);
+		else	puts("Error while reading F48");
+		fclose(dummy);
 		}
-		else
-		{
-			 puts("Error opening F48");
-		}
+	else	puts("Error opening F48");
 	}
 #endif
 
-	SRdCxROMFalse();
+SRdCxROMFalse();
 
-	RafEcr48 = RafEcrAC40;
-	/* Initialisation du tableau EmuWrite */
-	memset(EmuWrite,0,sizeof(EmuWrite));
-	EmuWrite[0x04] = EmuWrite[0x05] = EmuWrite[0x06] =
-					 EmuWrite[0x07] =  UpdScreen40;
-	EmuWrite[0xc0] = EmuWc0;
-	EmuWrite[0xcf]= EmuWCF;
+RafEcr48 = RafEcrAC40;
+/* Initialisation du tableau EmuWrite */
+memset(EmuWrite,0,sizeof(EmuWrite));
+EmuWrite[0x04] = EmuWrite[0x05] = EmuWrite[0x06] =
+	EmuWrite[0x07] =  UpdScreen40;
+EmuWrite[0xc0] = EmuWc0;
+EmuWrite[0xcf]= EmuWCF;
 
 
-	/* Initialisation du tableau allowwrite */
-	memset(allowwrite, TRUE, sizeof(allowwrite));
-	for(a3=0xc0; a3<0x100; a3++)
-		allowwrite[a3]=allowwrite[a3+(OFFBANK>>8)]=FALSE;
+/* Initialisation du tableau allowwrite */
+memset(allowwrite, TRUE, sizeof(allowwrite));
+for(a3=0xc0; a3<0x100; a3++)
+	allowwrite[a3]=allowwrite[a3+(OFFBANK>>8)]=FALSE;
 
-	/* Configuration memoire et registre a l'allumage de l'Apple */
-	Reg_A = Reg_X = Reg_Y = Reg_S = bgv1 = Vkbd = 0; Reg_P = 0x20;
-	fsa1 = 0;
-	RdC3ROM = RdPage2 = Rd80store = RdHires = RdRAMRd = RdRAMWrt =
-			  Rd80vid = RdLCRAM = RdAltZP = FALSE;
-	RdBNK2 = WrLCRAM = TRUE;
-	AppleCode->bytes[0x04fb]=0xff;
-	AppleCode->bytes[0xc064]= AppleCode->bytes[0xc065]= 0xff;
+/* Configuration memoire et registre a l'allumage de l'Apple */
+Reg_A = Reg_X = Reg_Y = Reg_S = bgv1 = Vkbd = 0; Reg_P = 0x20;
+fsa1 = 0;
+RdC3ROM = RdPage2 = Rd80store = RdHires = RdRAMRd = RdRAMWrt =
+	Rd80vid = RdLCRAM = RdAltZP = FALSE;
+RdBNK2 = WrLCRAM = TRUE;
+AppleCode->bytes[0x04fb]=0xff;
+AppleCode->bytes[0xc064]= AppleCode->bytes[0xc065]= 0xff;
 
-	/* Inhibe l'edition au clavier */
-	oldedit = _kernel_osbyte(4,1,0) & 0xff;
-	/*  Change l'effet de la touche Break
-   		0x5a: %01.01.10.10 */
-	oldbreak = _kernel_osbyte(247,0x5a,0) & 0xff;
+/* Inhibe l'edition au clavier */
+oldedit = _kernel_osbyte(4,1,0) & 0xff;
+/* Change l'effet de la touche Break
+   0x5a: %01.01.10.10 */
+oldbreak = _kernel_osbyte(247,0x5a,0) & 0xff;
 
-	/* Mode ecran Apple */
-	French_bbc_mode(MODE_APPLE);
-	amode= TRUE;
+/* Mode ecran Apple */
+French_bbc_mode(MODE_APPLE);
+amode= TRUE;
 
-	/* Visualisation caracteres &&& */
-	current_textcs = vprimarycs;
-	SRdTextTrue();
-	SRdHiresFalse();
+/* Visualisation caracteres &&& */
+current_textcs = vprimarycs;
+SRdTextTrue();
+SRdHiresFalse();
 
-	/* Memorisation du point a reprendre en cas de RESET */
-	setjmp(myresetpoint);
-	signal(SIGINT, Areset); /* Redirection du Reset */
+/* Memorisation du point a reprendre en cas de RESET */
+setjmp(myresetpoint);
+signal(SIGINT, Areset); /* Redirection du Reset */
 
-	Reg_PC=Adr((u_int) 0xfffc)-1;
-	Fetch();
-
-	return 0;
+Reg_PC=Adr((u_int) 0xfffc)-1;
+Fetch();
 }
