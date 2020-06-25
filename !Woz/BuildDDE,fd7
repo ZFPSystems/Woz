@@ -1,8 +1,13 @@
 | builder for Acorn/ROOL DDE
 | By Paolo Fabio Zaino
 
+|---------------------------------------------
 | Some useful build configuration bits:
+
+| Force cleaning up before building:
 Set Build$Clean 1
+
+|---------------------------------------------
 
 | Temporarly set this directory as root
 Set Return$Dir &
@@ -11,9 +16,9 @@ Dir <Obey$Dir>
 | Make the Library
 WimpSlot -min 1024k
 
-If <Build$Clean> = 1 Then wipe o.* ~C F
+If <Build$Clean> = 1 Then IfThere o.* Then wipe o.* ~C F
 
-amu THROWBACK=-throwback -f MakeFileDDE
+amu -desktop THROWBACK=-throwback CPUArch=7 -f MakeFileDDE
 
 | Reset
 dir <Return$Dir>

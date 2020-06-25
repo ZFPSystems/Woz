@@ -5,10 +5,13 @@
 ####
 
 #LIB=$.Clib.o.Stubs $.RISC_OSlib.o.RISC_OSlib # Use shared C library
+#CPUArch=5
 
 LIB=C:o.Stubs RISC_OSlib:o.RISC_OSlib # Use shared C library
-CCFlags=-c -depend !Depend -throwback -apcs 3/32/fpe2/swst/fp/nofpr
-ASMFlags=--throwback --regnames=callstd  --apcs=3/32/fpe2/swst/fp/nofpr --32 --cpu=7
+
+CCFlags=-c -depend !Depend -throwback -apcs 3/32/fpe2/swst/fp/nofpr -arch $(CPUArch)
+
+ASMFlags=--throwback --regnames=callstd  --apcs=3/32/fpe2/swst/fp/nofpr --32 --cpu=$(CPUArch)
 
 !RunImage:   Simulator.o Fetch.o EMuRead.o EmuOp.o Adressage.o CodeOp.o EmuWrite.o Sprite.o Splot.o
  link -o !RunImage Simulator.o Fetch.o EmuRead.o Adressage.o EmuOp.o CodeOp.o EmuWrite.o Sprite.o SPlot.o $(LIB)
@@ -39,7 +42,7 @@ Sprite.o:    Sprite.c general.h
  cc $(CCFlags) -zpnocheck_stack -IRISC_OSlib: Sprite.c
 
 SPlot.o:     SPlot.s
- objasm $(CCFlags) -FROM s.SPlot -TO o.SPlot -S -Q -C
+ objasm $(ASMFlags) -FROM s.SPlot -TO o.SPlot -S -Q -C
 
 # Dynamic dependencies:
 o.SPlot: s.SPlot
